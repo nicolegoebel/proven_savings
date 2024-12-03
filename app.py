@@ -267,6 +267,8 @@ def calculate_admin_savings(num_companies, reminder_frequency):
 def calculate_savings(num_companies, selected_levels, reminder_frequency):
     """Calculate savings based on the distribution and parameters using linear regression."""
     distribution = calculate_company_distribution(num_companies, selected_levels)
+    total_admin_savings = calculate_admin_savings(num_companies, reminder_frequency)
+    
     savings = {}
     details = {}
     
@@ -278,21 +280,19 @@ def calculate_savings(num_companies, selected_levels, reminder_frequency):
             intercept = PARAMETERS[level]['intercept']
             # Calculate savings using linear regression: y = mx + b
             total_savings = ((slope * count) + intercept) * success_rate
-            admin_savings = calculate_admin_savings(count, reminder_frequency)
             
             successful_companies = round(count * success_rate)
             details[level] = {
                 'companies': count,
                 'successful_companies': successful_companies,
                 'savings': total_savings,
-                'admin_savings': admin_savings,
-                'total_combined_savings': total_savings + admin_savings,
-                'savings_per_company': total_savings / count if count > 0 else 0,
-                'admin_savings_per_company': admin_savings / count if count > 0 else 0
+                'admin_savings': 0,  # Set to 0 for individual levels
+                'total_combined_savings': total_savings,  # Don't include admin savings in level totals
+                'savings_per_company': total_savings / count if count > 0 else 0
             }
             savings[level] = total_savings
     
-    return savings, distribution, details
+    return sum(savings.values()), distribution, details, total_admin_savings
 
 def format_value(value, is_currency=True):
     """Format numeric values for display."""
@@ -301,22 +301,21 @@ def format_value(value, is_currency=True):
     
     abs_value = abs(value)
     if abs_value >= 1_000_000:
-        # Round to nearest million and format with M
-        value_in_m = round(value / 1_000_000)
-        return f"${value_in_m:,}M" if is_currency else f"{value_in_m:,}M"
+        # Round to one decimal place for millions
+        value_in_m = round(value / 1_000_000, 1)
+        return f"${value_in_m:,.1f}M" if is_currency else f"{value_in_m:,.1f}M"
     elif abs_value >= 1000:
-        # Round to nearest thousand and format with K
+        # Round to nearest thousand for K values
         value_in_k = round(value / 1000)
         return f"${value_in_k:,}K" if is_currency else f"{value_in_k:,}K"
     else:
         # For values less than 1000, keep original formatting
         return f"${value:,.0f}" if is_currency else f"{value:,.0f}"
 
-def display_metrics_table(selected_levels, details):
+def display_metrics_table(selected_levels, details, total_admin_savings):
     """Display metrics in a table format."""
     # Calculate totals
     total_savings = sum(d['savings'] for d in details.values())
-    total_admin_savings = sum(d['admin_savings'] for d in details.values())
     total_combined = total_savings + total_admin_savings
     total_companies = sum(d['companies'] for d in details.values())
     
@@ -331,8 +330,8 @@ def display_metrics_table(selected_levels, details):
     
     # Row labels and values
     metrics = [
-        ("Potential Savings", "savings", True, "Using our database, we model potential savings on the relationship between total offers redeemed and the number of portfolio companies within a specific investment level, over the period of one year."),
-        ("Admin Cost Savings", "admin_savings", True, "Admin time is estimated by counting the hours spent managing current vendors (~5 hours/month), responding to portfolio company requests (bimonthly inquiries for half of portfolio companies, ~20 minutes each), tailoring specific vendor-portfolio company introductions (half of portfolio companies require specific introduction each month, ~15 minutes each), performing administrative tasks such as updating and maintaining vendor directory database (2 updates weekly, ~1 hour each), and reaching out to vendors to ensure availability of fresh, new deals offered (10 inquires per week, ~10 minutes each). We assume an annual average salary of $150K and 50% of the employees time applied to the above tasks."),
+        ("Potential Portfolio Savings", "savings", True, "Using our database, we model potential savings on the relationship between total offers redeemed and the number of portfolio companies within a specific investment level, over the period of one year."),
+        ("VC Admin Cost Savings", "admin_savings", True, "Admin time is estimated by counting the hours spent managing current vendors (~5 hours/month), responding to portfolio company requests (bimonthly inquiries for half of portfolio companies, ~20 minutes each), tailoring specific vendor-portfolio company introductions (half of portfolio companies require specific introduction each month, ~15 minutes each), performing administrative tasks such as updating and maintaining vendor directory database (2 updates weekly, ~1 hour each), and reaching out to vendors to ensure availability of fresh, new deals offered (10 inquires per week, ~10 minutes each). We assume an annual average salary of $150K and 50% of the employees time applied to the above tasks."),
         ("Total Potential Savings", "total_combined_savings", True, None),
         ("Average Potential Savings/Portfolio Company", "savings_per_company", True, None)
     ]
@@ -348,8 +347,12 @@ def display_metrics_table(selected_levels, details):
         
         # Value columns for each investment level
         for i, level in enumerate(selected_levels):
-            value = details[level][key] if level in details else 0
-            row_cols[i+1].markdown(f'<div class="value-cell">{format_value(value, is_currency)}</div>', unsafe_allow_html=True)
+            if label == "Admin Cost Savings":
+                # Show empty cell for admin savings in level columns
+                row_cols[i+1].markdown('<div class="value-cell">-</div>', unsafe_allow_html=True)
+            else:
+                value = details[level][key] if level in details else 0
+                row_cols[i+1].markdown(f'<div class="value-cell">{format_value(value, is_currency)}</div>', unsafe_allow_html=True)
         
         # Total column
         if label == "Potential Savings":
@@ -362,8 +365,8 @@ def display_metrics_table(selected_levels, details):
             total = total_combined
             # Add divider after Total Potential Savings
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-        else:  # Average Potential Savings/Startup
-            total = total_savings/total_companies if total_companies > 0 else 0
+        else:  # Average Potential Savings/Portfolio Company
+            total = total_combined/total_companies if total_companies > 0 else 0
         
         row_cols[-1].markdown(f'<div class="total-cell">{format_value(total, is_currency)}</div>', unsafe_allow_html=True)
 
@@ -391,21 +394,19 @@ if cols[2].checkbox('Series A+', value=True):
 st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
 
 # Reminder frequency selection
-st.subheader("3. Select Reminder Frequency", help="This is the frequency which which admins contact portfolio companies in order to remind them to tap into available deals on their Proven platform.")
-reminder_frequencies = ['No reminders', 'Quarterly reminders', 'Monthly reminders']
-reminder_frequency = st.selectbox('', reminder_frequencies, index=0)
+st.subheader("3. Select Reminder Frequency", help="This is the frequency with which admins contact portfolio companies in order to remind them to tap into available deals on their Proven platform.")
 
-st.markdown("<div style='margin: 4rem 0;'></div>", unsafe_allow_html=True)
+reminder_frequency = st.selectbox('', ['No reminders', 'Quarterly reminders', 'Monthly reminders'], index=2)
 
 if len(investment_levels) == 0:
     st.warning('Please select at least one investment level.')
 else:
     # Add section title and divider
-    st.markdown("<h2 style='font-size: 2em; margin-bottom: 0.5rem;'>Potential Savings</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='font-size: 2em; margin-bottom: 0.5rem;'>Potential Annual Savings</h2>", unsafe_allow_html=True)
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
     # Calculate and display results
-    savings, distribution, details = calculate_savings(num_companies, investment_levels, reminder_frequency)
+    savings, distribution, details, total_admin_savings = calculate_savings(num_companies, investment_levels, reminder_frequency)
     
     # Display the metrics table
-    display_metrics_table(investment_levels, details)
+    display_metrics_table(investment_levels, details, total_admin_savings)
