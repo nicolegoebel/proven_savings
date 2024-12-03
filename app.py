@@ -330,10 +330,10 @@ def display_metrics_table(selected_levels, details):
 st.title('Portfolio Savings with Proven')
 
 # Input controls
-st.markdown('<p class="section-header">Select Number of Portfolio Companies</p>', unsafe_allow_html=True)
-num_companies = st.slider('', min_value=10, max_value=600, value=100)
+st.markdown('<p class="section-header">1. Select Number of Portfolio Companies</p>', unsafe_allow_html=True)
+num_companies = st.slider('', min_value=10, max_value=1000, value=100)
 
-st.markdown('<p class="section-header">Select Investment Levels</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-header" title="The total number of portfolio companies selected above are distributed among the three levels of investment based on the average distributions in our database.">2. Select Investment Levels</p>', unsafe_allow_html=True)
 cols = st.columns(3)
 investment_levels = []
 if cols[0].checkbox('Pre seed', value=True):
@@ -344,7 +344,7 @@ if cols[2].checkbox('Series A+', value=True):
     investment_levels.append('Series A+')
 
 # Reminder frequency selection
-st.markdown('<p class="section-header">Select Reminder Frequency</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-header">3. Select Reminder Frequency</p>', unsafe_allow_html=True)
 reminder_frequencies = ['No reminders', 'Quarterly reminders', 'Monthly reminders']
 reminder_frequency = st.selectbox('', reminder_frequencies, index=0)
 
