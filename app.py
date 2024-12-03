@@ -5,6 +5,11 @@ import numpy as np
 # Add custom CSS for clean layout
 st.markdown("""
 <style>
+    /* Apply clean font family to all elements */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
     div[data-testid="column"] {
         padding: 0.5rem;
         margin: 0;
@@ -18,7 +23,7 @@ st.markdown("""
     
     .column-header {
         text-align: center;
-        font-size: 1.2em;
+        font-size: 1.4em;
         font-weight: bold;
         padding-bottom: 0.5rem;
         margin-bottom: 1rem;
@@ -27,6 +32,11 @@ st.markdown("""
     
     .column-header.value-column {
         border-bottom: 2px solid #e0e0e0;
+    }
+
+    .column-header.total-column {
+        border-bottom: 2px solid #2E5EAA;
+        color: #2E5EAA;
     }
     
     .row-label {
@@ -52,6 +62,7 @@ st.markdown("""
         border: none;
         font-size: 1.8em;
         font-weight: 800;
+        color: #2E5EAA;
     }
 
     .section-header {
@@ -61,8 +72,21 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
 
+    .divider {
+        height: 2px;
+        background-color: #e0e0e0;
+        margin: 1rem 0;
+    }
+
+    .title-divider {
+        margin-top: 0;
+        margin-bottom: 3rem;
+    }
+
     h1 {
-        font-size: 2em !important;
+        font-size: 2.5em !important;
+        font-weight: bold !important;
+        margin-bottom: 0.5rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -223,7 +247,7 @@ def calculate_admin_savings(num_companies, reminder_frequency):
     """
     N = num_companies
     T_savings = 0.85
-    ADMIN_FACTOR = .5
+    ADMIN_FACTOR = .5 # amount of time an admin spends on admin tasks
     
     # Calculate total hours spent
     vendor_relationship = 5 * 12 # Fixed hours per month
@@ -272,11 +296,21 @@ def calculate_savings(num_companies, selected_levels, reminder_frequency):
 
 def format_value(value, is_currency=True):
     """Format numeric values for display."""
-    if isinstance(value, (int, float)):
-        if is_currency:
-            return f"${round_to_ten(value):,.0f}"
-        return f"{round_to_ten(value):,.0f}"
-    return str(value)
+    if value == 0:
+        return "$0" if is_currency else "0"
+    
+    abs_value = abs(value)
+    if abs_value >= 1_000_000:
+        # Round to nearest million and format with M
+        value_in_m = round(value / 1_000_000)
+        return f"${value_in_m:,}M" if is_currency else f"{value_in_m:,}M"
+    elif abs_value >= 1000:
+        # Round to nearest thousand and format with K
+        value_in_k = round(value / 1000)
+        return f"${value_in_k:,}K" if is_currency else f"{value_in_k:,}K"
+    else:
+        # For values less than 1000, keep original formatting
+        return f"${value:,.0f}" if is_currency else f"{value:,.0f}"
 
 def display_metrics_table(selected_levels, details):
     """Display metrics in a table format."""
@@ -293,21 +327,24 @@ def display_metrics_table(selected_levels, details):
     cols[0].markdown('<div class="column-header"></div>', unsafe_allow_html=True)
     for i, level in enumerate(selected_levels):
         cols[i+1].markdown(f'<div class="column-header value-column">{level}</div>', unsafe_allow_html=True)
-    cols[-1].markdown('<div class="column-header value-column">Total</div>', unsafe_allow_html=True)
+    cols[-1].markdown('<div class="column-header total-column">Total</div>', unsafe_allow_html=True)
     
     # Row labels and values
     metrics = [
-        ("Potential Savings", "savings", True),
-        ("Admin Cost Savings", "admin_savings", True),
-        ("Total Potential Savings", "total_combined_savings", True),
-        ("Average Potential Savings/Startup", "savings_per_company", True)
+        ("Potential Savings", "savings", True, "Using our database, we model potential savings on the relationship between total offers redeemed and the number of portfolio companies within a specific investment level, over the period of one year."),
+        ("Admin Cost Savings", "admin_savings", True, "Admin time is estimated by counting the hours spent managing current vendors (~5 hours/month), responding to portfolio company requests (bimonthly inquiries for half of portfolio companies, ~20 minutes each), tailoring specific vendor-portfolio company introductions (half of portfolio companies require specific introduction each month, ~15 minutes each), performing administrative tasks such as updating and maintaining vendor directory database (2 updates weekly, ~1 hour each), and reaching out to vendors to ensure availability of fresh, new deals offered (10 inquires per week, ~10 minutes each). We assume an annual average salary of $150K and 50% of the employees time applied to the above tasks."),
+        ("Total Potential Savings", "total_combined_savings", True, None),
+        ("Average Potential Savings/Portfolio Company", "savings_per_company", True, None)
     ]
     
-    for label, key, is_currency in metrics:
+    for i, (label, key, is_currency, tooltip) in enumerate(metrics):
         row_cols = st.columns([1, 1, 1, 1, 1])
         
-        # Label column
-        row_cols[0].markdown(f'<div class="row-label">{label}</div>', unsafe_allow_html=True)
+        # Label column with tooltip if provided
+        if tooltip:
+            row_cols[0].markdown(f'<div class="row-label">{label}</div>', help=tooltip, unsafe_allow_html=True)
+        else:
+            row_cols[0].markdown(f'<div class="row-label">{label}</div>', unsafe_allow_html=True)
         
         # Value columns for each investment level
         for i, level in enumerate(selected_levels):
@@ -319,34 +356,46 @@ def display_metrics_table(selected_levels, details):
             total = total_savings
         elif label == "Admin Cost Savings":
             total = total_admin_savings
+            # Add divider after Admin Cost Savings
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         elif label == "Total Potential Savings":
             total = total_combined
+            # Add divider after Total Potential Savings
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         else:  # Average Potential Savings/Startup
             total = total_savings/total_companies if total_companies > 0 else 0
         
         row_cols[-1].markdown(f'<div class="total-cell">{format_value(total, is_currency)}</div>', unsafe_allow_html=True)
 
 # Streamlit UI
-st.title('Portfolio Savings with Proven')
+st.title('Three Steps to Estimating Potential Portfolio Savings Using Proven')
+st.markdown('<div class="divider title-divider"></div>', unsafe_allow_html=True)
 
 # Input controls
-st.markdown('<p class="section-header">1. Select Number of Portfolio Companies</p>', unsafe_allow_html=True)
+st.subheader("1. Select Total Number of Portfolio Companies")
 num_companies = st.slider('', min_value=10, max_value=1000, value=100)
 
-st.markdown('<p class="section-header" title="The total number of portfolio companies selected above are distributed among the three levels of investment based on the average distributions in our database.">2. Select Investment Levels</p>', unsafe_allow_html=True)
+st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
+
+st.subheader("2. Select Investment Levels", help="The total number of portfolio companies selected above are distributed among the three levels of investment based on the average distributions in our database: Pre-seed: 8-9%, Seed: 90-94%, Series A+: 2-6%")
+
 cols = st.columns(3)
 investment_levels = []
-if cols[0].checkbox('Pre seed', value=True):
+if cols[0].checkbox('Pre-Seed', value=True):
     investment_levels.append('Pre seed')
 if cols[1].checkbox('Seed', value=True):
     investment_levels.append('Seed')
 if cols[2].checkbox('Series A+', value=True):
     investment_levels.append('Series A+')
 
+st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
+
 # Reminder frequency selection
-st.markdown('<p class="section-header">3. Select Reminder Frequency</p>', unsafe_allow_html=True)
+st.subheader("3. Select Reminder Frequency", help="This ishe frequency that portfolio companies are contaced in order to remind them to tap into available deals on their Proven platform.")
 reminder_frequencies = ['No reminders', 'Quarterly reminders', 'Monthly reminders']
 reminder_frequency = st.selectbox('', reminder_frequencies, index=0)
+
+st.markdown("<div style='margin: 4rem 0;'></div>", unsafe_allow_html=True)
 
 if len(investment_levels) == 0:
     st.warning('Please select at least one investment level.')
