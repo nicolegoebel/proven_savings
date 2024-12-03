@@ -400,6 +400,10 @@ st.markdown("<div style='margin: 4rem 0;'></div>", unsafe_allow_html=True)
 if len(investment_levels) == 0:
     st.warning('Please select at least one investment level.')
 else:
+    # Add section title and divider
+    st.markdown("<h2 style='font-size: 2em; margin-bottom: 0.5rem;'>Potential Savings</h2>", unsafe_allow_html=True)
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    
     # Calculate and display results
     savings, distribution, details = calculate_savings(num_companies, investment_levels, reminder_frequency)
     
