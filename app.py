@@ -391,7 +391,7 @@ if cols[2].checkbox('Series A+', value=True):
 st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
 
 # Reminder frequency selection
-st.subheader("3. Select Reminder Frequency", help="This ishe frequency that portfolio companies are contaced in order to remind them to tap into available deals on their Proven platform.")
+st.subheader("3. Select Reminder Frequency", help="This is the frequency which which admins contact portfolio companies in order to remind them to tap into available deals on their Proven platform.")
 reminder_frequencies = ['No reminders', 'Quarterly reminders', 'Monthly reminders']
 reminder_frequency = st.selectbox('', reminder_frequencies, index=0)
 
