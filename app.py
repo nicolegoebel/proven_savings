@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 
 # Add custom CSS for clean layout
 st.markdown("""
@@ -99,17 +100,21 @@ DISTRIBUTION = {
     'pre_seed_series': {'Pre seed': 0.80, 'Series A+': 0.20}
 }
 
-# Parameters for linear regression calculations (y = mx + b)
+# Parameters for savings calculations
 PARAMETERS = {
     'Pre seed': {
+        'model': 'linear',
         'slope': 142000.9,
         'intercept': -61478.75
     },
     'Seed': {
-        'slope': 212778.2,
-        'intercept': -118202.85
+        'model': 'polynomial',
+        'a': 1245.44,  # x^2 coefficient
+        'b': 53613.65,  # x coefficient
+        'c': 220522.93  # constant term
     },
     'Series A+': {
+        'model': 'linear',
         'slope': 111347.28,
         'intercept': -72002.51
     }
@@ -265,7 +270,7 @@ def calculate_admin_savings(num_companies, reminder_frequency):
     return hours_saved * HOURLY_RATE
 
 def calculate_savings(num_companies, selected_levels, reminder_frequency):
-    """Calculate savings based on the distribution and parameters using linear regression."""
+    """Calculate savings based on the distribution and parameters using linear or polynomial regression."""
     distribution = calculate_company_distribution(num_companies, selected_levels)
     total_admin_savings = calculate_admin_savings(num_companies, reminder_frequency)
     
@@ -276,10 +281,13 @@ def calculate_savings(num_companies, selected_levels, reminder_frequency):
     
     for level, count in distribution.items():
         if count > 0:
-            slope = PARAMETERS[level]['slope']
-            intercept = PARAMETERS[level]['intercept']
-            # Calculate savings using linear regression: y = mx + b
-            total_savings = ((slope * count) + intercept) * success_rate
+            params = PARAMETERS[level]
+            
+            # Calculate savings based on model type
+            if params['model'] == 'linear':
+                total_savings = ((params['slope'] * count) + params['intercept']) * success_rate
+            else:  # polynomial
+                total_savings = (params['a'] * (count ** 2) + params['b'] * count + params['c']) * success_rate
             
             successful_companies = round(count * success_rate)
             details[level] = {
@@ -347,28 +355,98 @@ def display_metrics_table(selected_levels, details, total_admin_savings):
         
         # Value columns for each investment level
         for i, level in enumerate(selected_levels):
-            if label == "Admin Cost Savings":
-                # Show empty cell for admin savings in level columns
+            if label == "VC Admin Cost Savings":
+                # Show dash for admin savings in level columns
                 row_cols[i+1].markdown('<div class="value-cell">-</div>', unsafe_allow_html=True)
             else:
                 value = details[level][key] if level in details else 0
                 row_cols[i+1].markdown(f'<div class="value-cell">{format_value(value, is_currency)}</div>', unsafe_allow_html=True)
         
         # Total column
-        if label == "Potential Savings":
+        if label == "Potential Portfolio Savings":
             total = total_savings
-        elif label == "Admin Cost Savings":
+        elif label == "VC Admin Cost Savings":
             total = total_admin_savings
             # Add divider after Admin Cost Savings
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         elif label == "Total Potential Savings":
-            total = total_combined
+            total = total_savings + total_admin_savings
             # Add divider after Total Potential Savings
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         else:  # Average Potential Savings/Portfolio Company
-            total = total_combined/total_companies if total_companies > 0 else 0
+            total = (total_savings + total_admin_savings)/total_companies if total_companies > 0 else 0
         
         row_cols[-1].markdown(f'<div class="total-cell">{format_value(total, is_currency)}</div>', unsafe_allow_html=True)
+
+def plot_savings_models():
+    """Create a comparison plot of savings models using Altair."""
+    # Create range of company numbers
+    companies = np.linspace(10, 1600, 100)
+    
+    # Calculate savings for each model
+    data = pd.DataFrame({
+        'Companies': companies,
+        'Seed (Current Polynomial)': PARAMETERS['Seed']['a'] * (companies ** 2) + 
+                                   PARAMETERS['Seed']['b'] * companies + 
+                                   PARAMETERS['Seed']['c'],
+        'Seed (Alternative Polynomial)': 1245.44228685 * (companies ** 2) + 
+                                       53613.64782558 * companies + 
+                                       220522.93396342,
+        'Seed (Linear)': 212778.2 * companies - 118202.85,  # Original linear parameters
+        'Pre_seed': PARAMETERS['Pre seed']['slope'] * companies + 
+                   PARAMETERS['Pre seed']['intercept'],
+        'Series_A': PARAMETERS['Series A+']['slope'] * companies + 
+                   PARAMETERS['Series A+']['intercept']
+    })
+    
+    # Melt the dataframe for Altair
+    data_melted = data.melt(
+        id_vars=['Companies'], 
+        value_vars=['Seed (Current Polynomial)', 'Seed (Alternative Polynomial)', 
+                   'Seed (Linear)', 'Pre_seed', 'Series_A'],
+        var_name='Model',
+        value_name='Savings'
+    )
+    
+    # Base chart for solid lines
+    solid_lines = alt.Chart(data_melted).mark_line().encode(
+        x=alt.X('Companies:Q', title='Number of Portfolio Companies'),
+        y=alt.Y('Savings:Q', 
+                title='Potential Savings ($)',
+                axis=alt.Axis(format='$~s')),
+        color=alt.Color('Model:N', 
+                       title='Investment Stage',
+                       scale=alt.Scale(
+                           domain=['Seed (Current Polynomial)', 'Seed (Alternative Polynomial)', 
+                                 'Seed (Linear)', 'Pre_seed', 'Series_A'],
+                           range=['#1f77b4', '#1f77b4', '#1f77b4', '#2ca02c', '#d62728']
+                       )),
+        strokeDash=alt.StrokeDash(
+            'Model:N',
+            scale=alt.Scale(
+                domain=['Seed (Current Polynomial)', 'Seed (Alternative Polynomial)', 
+                       'Seed (Linear)', 'Pre_seed', 'Series_A'],
+                range=[[0], [10,5], [5,5], [0], [0]]  # Solid, dot-dash, dashed, solid, solid
+            )
+        ),
+        tooltip=[
+            alt.Tooltip('Companies:Q', title='Portfolio Companies'),
+            alt.Tooltip('Savings:Q', title='Savings', format='$,.0f'),
+            alt.Tooltip('Model:N', title='Stage')
+        ]
+    ).properties(
+        width=700,
+        height=400,
+        title='Comparison of Savings Models'
+    ).configure_axis(
+        labelFontSize=12,
+        titleFontSize=14
+    ).configure_title(
+        fontSize=16,
+        anchor='middle'
+    )
+    
+    return solid_lines
 
 # Streamlit UI
 st.title('Three Steps to Estimating Potential Portfolio Savings Using Proven')
@@ -376,7 +454,7 @@ st.markdown('<div class="divider title-divider"></div>', unsafe_allow_html=True)
 
 # Input controls
 st.subheader("1. Select Total Number of Portfolio Companies")
-num_companies = st.slider('', min_value=10, max_value=1000, value=100)
+num_companies = st.slider('', min_value=10, max_value=1600, value=100)
 
 st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
 
@@ -394,9 +472,13 @@ if cols[2].checkbox('Series A+', value=True):
 st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
 
 # Reminder frequency selection
-st.subheader("3. Select Reminder Frequency", help="This is the frequency with which admins contact portfolio companies in order to remind them to tap into available deals on their Proven platform.")
-
-reminder_frequency = st.selectbox('', ['No reminders', 'Quarterly reminders', 'Monthly reminders'], index=2)
+st.subheader("3. Select Reminder Frequency", help="This is the frequency with which admins contact portfolio companies in order to remind them to tap into available deals on their Proven platform; the higher the frequency, the higher the potential savings, with Monthly and Quarterly reminders increasing the No Frequency savings by 30% and 15%, respectively.")
+reminder_frequency = st.selectbox(
+    'Reminder Frequency',
+    ['No reminders', 'Quarterly reminders', 'Monthly reminders'],
+    index=2,
+    label_visibility='collapsed'
+)
 
 if len(investment_levels) == 0:
     st.warning('Please select at least one investment level.')
@@ -410,3 +492,12 @@ else:
     
     # Display the metrics table
     display_metrics_table(investment_levels, details, total_admin_savings)
+
+    # Add spacing
+    st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
+
+    # Display the comparison plot
+    # st.subheader("Savings Models Comparison")
+    # st.markdown("This plot shows how potential savings scale with portfolio size across different investment stages.")
+    # chart = plot_savings_models()
+    # st.altair_chart(chart, use_container_width=True)
