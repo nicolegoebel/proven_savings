@@ -93,11 +93,42 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Constants for investment level distributions
+"""
+Two different approaches for distributing companies across investment levels:
+
+1. Original Variable Distribution (DISTRIBUTION):
+   - Uses different ratios depending on which combination of levels is selected
+   - Pre-defined ratios for each possible combination:
+     * All three levels: Pre-seed (8%), Seed (90%), Series A+ (2%)
+     * Pre-seed + Seed: Pre-seed (9%), Seed (91%)
+     * Seed + Series A+: Seed (94%), Series A+ (6%)
+     * Pre-seed + Series A+: Pre-seed (80%), Series A+ (20%)
+   - Advantage: Tailored ratios for each specific combination
+   - Disadvantage: Less flexible, requires predefined ratios for each possible combination
+"""
 DISTRIBUTION = {
     'all_three': {'Pre seed': 0.08, 'Seed': 0.90, 'Series A+': 0.02},
     'pre_seed_seed': {'Pre seed': 0.09, 'Seed': 0.91},
     'seed_series': {'Seed': 0.94, 'Series A+': 0.06},
     'pre_seed_series': {'Pre seed': 0.80, 'Series A+': 0.20}
+}
+
+"""
+2. Fixed Distribution (JS_DISTRIBUTION):
+   - Uses a single set of weights that are normalized based on selected levels
+   - Same ratios used regardless of which combination is selected
+   - When fewer than all levels are selected, weights are normalized while maintaining relative proportions
+   - Example for 100 companies with Seed + Series A+ selected:
+     * Original weights: Seed (0.875), Series A+ (0.04)
+     * Total weight = 0.875 + 0.04 = 0.915
+     * Normalized: Seed (96%), Series A+ (4%)
+   - Advantage: More flexible, maintains consistent relative relationships
+   - Disadvantage: May not capture nuanced differences between specific combinations
+"""
+JS_DISTRIBUTION = {
+    'Pre seed': 0.085,  # 8.5%
+    'Seed': 0.875,      # 87.5%
+    'Series A+': 0.04   # 4%
 }
 
 # Parameters for savings calculations
@@ -135,28 +166,67 @@ def round_to_ten(value):
     return round(value / 10) * 10
 
 def calculate_company_distribution(num_companies, selected_levels):
-    """Calculate the number of companies for each investment level."""
+    """Calculate the number of companies for each investment level.
+    
+    This function supports two different distribution methods:
+    
+    1. Fixed (JavaScript-style):
+       - Uses consistent weights (JS_DISTRIBUTION) regardless of selected combination
+       - Weights are normalized while maintaining relative proportions
+       - Example: If Seed (0.875) and Series A+ (0.04) are selected:
+         * Normalized to Seed (95.6%) and Series A+ (4.4%)
+         * For 100 companies: Seed (96), Series A+ (4)
+    
+    2. Original (Variable):
+       - Uses different predefined ratios (DISTRIBUTION) for each combination
+       - Example: If Seed and Series A+ are selected:
+         * Uses seed_series distribution: Seed (94%), Series A+ (6%)
+         * For 100 companies: Seed (94), Series A+ (6)
+    
+    Args:
+        num_companies (int): Total number of companies to distribute
+        selected_levels (list): List of selected investment levels
+    
+    Returns:
+        dict: Number of companies assigned to each selected level
+    """
     if len(selected_levels) == 1:
         return {selected_levels[0]: num_companies}
     
-    if len(selected_levels) == 2:
-        if 'Pre seed' in selected_levels and 'Seed' in selected_levels:
-            dist = DISTRIBUTION['pre_seed_seed']
-        elif 'Seed' in selected_levels and 'Series A+' in selected_levels:
-            dist = DISTRIBUTION['seed_series']
-        else:  # Pre seed and Series A+
-            dist = DISTRIBUTION['pre_seed_series']
-    else:  # All three levels
-        dist = DISTRIBUTION['all_three']
-    
-    # Filter distribution for selected levels and normalize
-    filtered_dist = {k: v for k, v in dist.items() if k in selected_levels}
-    total = sum(filtered_dist.values())
-    normalized_dist = {k: v/total for k, v in filtered_dist.items()}
-    
-    # Calculate number of companies for each level
-    return {level: round(normalized_dist[level] * num_companies) 
-            for level in selected_levels}
+    with st.sidebar:
+        st.markdown("### Advanced Settings")
+        distribution_method = st.selectbox(
+            "Distribution Method",
+            ["Original (Variable)", "Fixed (JavaScript-style)"],
+            help="Choose how to distribute companies across investment levels. Original method uses different ratios based on selected combinations. Fixed method uses consistent ratios regardless of selection."
+        )
+
+    if distribution_method == "Fixed (JavaScript-style)":
+        # JavaScript-style distribution: normalize the fixed weights
+        total_weight = sum(JS_DISTRIBUTION[level] for level in selected_levels)
+        return {
+            level: round((JS_DISTRIBUTION[level] / total_weight) * num_companies)
+            for level in selected_levels
+        }
+    else:
+        # Original distribution method: use predefined ratios for each combination
+        if len(selected_levels) == 2:
+            if 'Pre seed' in selected_levels and 'Seed' in selected_levels:
+                dist = DISTRIBUTION['pre_seed_seed']
+            elif 'Seed' in selected_levels and 'Series A+' in selected_levels:
+                dist = DISTRIBUTION['seed_series']
+            else:  # Pre seed and Series A+
+                dist = DISTRIBUTION['pre_seed_series']
+        else:  # All three levels
+            dist = DISTRIBUTION['all_three']
+        
+        # Filter and normalize the distribution for selected levels
+        filtered_dist = {k: v for k, v in dist.items() if k in selected_levels}
+        total = sum(filtered_dist.values())
+        normalized_dist = {k: v/total for k, v in filtered_dist.items()}
+        
+        return {level: round(normalized_dist[level] * num_companies) 
+                for level in selected_levels}
 
 def calculate_admin_savings(num_companies, reminder_frequency):
     """Calculate admin time savings based on the comprehensive formula.
