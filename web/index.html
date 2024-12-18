@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proven Savings Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Three Steps to Estimating Potential Portfolio Savings Using Proven</h1>
+        <div class="divider title-divider"></div>
+
+        <div class="calculator-section">
+            <div class="input-group">
+                <h2>Step 1: Portfolio Size</h2>
+                <label for="numCompanies">Number of Portfolio Companies:</label>
+                <input type="number" id="numCompanies" min="10" max="1600" value="100">
+            </div>
+
+            <div class="input-group">
+                <h2>Step 2: Investment Levels 
+                    <span class="tooltip-icon" data-tooltip="Based on your portfolio composition, select which investment stages apply to your fund. When Seed stage is selected, calculations reflect a Seed-dominant portfolio, while Pre-seed and Series A+ stages represent smaller, balanced portions of the total.">ⓘ</span>
+                </h2>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" name="investmentLevel" value="Pre-seed" checked>
+                        Pre-seed
+                    </label>
+                    <label>
+                        <input type="checkbox" name="investmentLevel" value="Seed" checked>
+                        Seed
+                    </label>
+                    <label>
+                        <input type="checkbox" name="investmentLevel" value="Series A+" checked>
+                        Series A+
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <h2>Step 3: Reminder Frequency 
+                    <span class="tooltip-icon" data-tooltip="How often do you want to send reminders to your portfolio companies? More frequent reminders lead to higher response rates.">ⓘ</span>
+                </h2>
+                <select id="reminderFrequency">
+                    <option value="none">No Reminder</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+
+            <button id="calculateButton" class="calculate-btn">Calculate Potential Annual Savings</button>
+        </div>
+
+        <div class="results-section">
+            <div class="table-container">
+                <div class="table-header">
+                    <div>Investment Level</div>
+                    <div>Potential Savings</div>
+                </div>
+                <div id="results-rows">
+                    <!-- Results will be inserted here -->
+                </div>
+                <div class="table-row total-row">
+                    <div class="header-cell">
+                        Total Portfolio Savings
+                        <span class="tooltip-icon" data-tooltip="Estimated annual savings based on historical data from similar numbers of portfolio companies and investment levels.">ⓘ</span>
+                    </div>
+                    <div id="total-savings">-</div>
+                </div>
+                <div class="table-row total-row">
+                    <div class="header-cell">
+                        Admin Time Savings
+                        <span class="tooltip-icon" data-tooltip="Estimated time savings for administrative tasks, including data collection, reporting, and portfolio company communication. Value is calculated based on industry standard hourly rates.">ⓘ</span>
+                    </div>
+                    <div id="admin-savings">-</div>
+                </div>
+                <div class="table-footer">
+                    <div>Potential Total Annual Savings</div>
+                    <div id="grand-total-savings">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/constants.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html>
