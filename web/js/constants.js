@@ -15,27 +15,29 @@ const SAVINGS_PER_COMPANY = {
 // Parameters for savings calculations
 const PARAMETERS = {
     'Pre-seed': {
-        model: 'linear',
-        slope: 142000.9,
-        intercept: -61478.75
+        model: 'polynomial',
+        a: 100,          // Quadratic growth
+        b: 35000,        // Linear component
+        c: 20000         // Base savings
     },
     'Seed': {
         model: 'polynomial',
-        a: 1245.44,  // x^2 coefficient
-        b: 53613.65,  // x coefficient
-        c: 220522.93  // constant term
+        a: 250,          // Strongest quadratic growth
+        b: 80000,        // Strong linear component
+        c: 50000         // Highest base savings
     },
     'Series A+': {
-        model: 'linear',
-        slope: 111347.28,
-        intercept: -72002.51
+        model: 'polynomial',
+        a: 50,           // Smallest quadratic growth
+        b: 25000,        // Smallest linear component
+        c: 15000         // Smallest base savings
     }
 };
 
 // Success rate multipliers based on reminder frequency
 const SUCCESS_RATES = {
-    'none': 0.10,      // 10% success rate with no reminders
-    'quarterly': 0.15,  // 15% success rate with quarterly reminders
+    'none': 0.10,      // 10% base success rate with no reminders
+    'quarterly': 0.15, // 15% success rate with quarterly reminders
     'monthly': 0.30    // 30% success rate with monthly reminders
 };
 

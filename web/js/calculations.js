@@ -54,59 +54,69 @@ function calculateCompanyDistribution(numCompanies, selectedLevels) {
     // Calculate total weight for selected levels
     let totalWeight = 0;
     selectedLevels.forEach(level => {
-        totalWeight += INVESTMENT_DISTRIBUTIONS[level];
+        totalWeight += INVESTMENT_DISTRIBUTIONS[level] || 0;
     });
 
     // Distribute companies proportionally
     const result = {};
     selectedLevels.forEach(level => {
-        const proportion = INVESTMENT_DISTRIBUTIONS[level] / totalWeight;
-        result[level] = Math.round(numCompanies * proportion);
+        const weight = INVESTMENT_DISTRIBUTIONS[level] || 0;
+        const proportion = totalWeight > 0 ? weight / totalWeight : 0;
+        result[level] = Math.max(1, Math.round(numCompanies * proportion));
     });
+
+    // Ensure total matches numCompanies
+    let total = Object.values(result).reduce((a, b) => a + b, 0);
+    if (total > numCompanies) {
+        // Adjust proportionally
+        Object.keys(result).forEach(level => {
+            result[level] = Math.max(1, Math.floor(result[level] * (numCompanies / total)));
+        });
+    }
 
     return result;
 }
 
 // Calculate savings for each investment level
 function calculateSavings(numCompanies, selectedLevels, reminderFrequency) {
-    if (numCompanies <= 0) {
-        return {
-            totalSavings: 0,
-            adminSavings: 0,
-            details: {}
-        };
-    }
-
     const distribution = calculateCompanyDistribution(numCompanies, selectedLevels);
     const adminSavings = calculateAdminSavings(numCompanies, reminderFrequency);
-    let totalSavings = 0;
+    
+    const savings = {};
     const details = {};
     
-    // Calculate savings for each investment level
-    Object.entries(distribution).forEach(([level, companies]) => {
-        const params = PARAMETERS[level];
-        let baseSavings;
-        
-        // Calculate savings based on model type
-        if (params.model === 'linear') {
-            baseSavings = (params.slope * companies) + params.intercept;
-        } else { // polynomial
-            baseSavings = (params.a * (companies ** 2)) + (params.b * companies) + params.c;
+    // Get success rate based on reminder frequency
+    const successRate = SUCCESS_RATES[reminderFrequency];
+    
+    for (const [level, count] of Object.entries(distribution)) {
+        if (count > 0) {
+            const params = PARAMETERS[level];
+            
+            // Calculate number of active companies based on success rate
+            const activeCompanies = Math.round(count * successRate);
+            
+            // Calculate savings using polynomial model based on active companies
+            const totalSavings = (params.a * Math.pow(activeCompanies, 2)) + 
+                               (params.b * activeCompanies) + 
+                               params.c;
+            
+            details[level] = {
+                companies: count,
+                successfulCompanies: activeCompanies,
+                savings: totalSavings,
+                adminSavings: 0,  // Set to 0 for individual levels
+                totalCombinedSavings: totalSavings,  // Don't include admin savings in level totals
+                savingsPerCompany: totalSavings / count
+            };
+            
+            savings[level] = totalSavings;
         }
-        
-        const successRate = SUCCESS_RATES[reminderFrequency];
-        const savings = Math.round(baseSavings * successRate);
-        
-        totalSavings += savings;
-        details[level] = {
-            companies: companies,
-            savings: savings
-        };
-    });
+    }
     
     return {
-        totalSavings: totalSavings,
-        adminSavings: adminSavings,
-        details: details
+        totalSavings: Object.values(savings).reduce((a, b) => a + b, 0),
+        distribution,
+        details,
+        adminSavings
     };
 }
