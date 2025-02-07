@@ -244,18 +244,15 @@ with col2:
 # Display visualizations
 st.header("Historical Visualizations")
 
-col1, col2 = st.columns(2)
+# Get the directory containing the current script
+script_dir = Path(__file__).parent
 
-with col1:
-    st.subheader("Historical Savings Trends")
-    # Get the directory containing the current script
-    script_dir = Path(__file__).parent
-    # Construct the absolute path to the image
-    image_path = script_dir / "static" / "historical_trends.png"
-    st.image(str(image_path))
+# Historical Savings Trends
+st.subheader("Historical Savings Trends")
+image_path = script_dir / "static" / "historical_trends.png"
+st.image(str(image_path))
 
-with col2:
-    st.subheader("Company Savings Distribution")
-    # Construct the absolute path to the image
-    image_path = script_dir / "static" / "company_distribution.png"
-    st.image(str(image_path))
+# Company Distribution
+st.subheader("Company Savings Distribution")
+image_path = script_dir / "static" / "company_distribution.png"
+st.image(str(image_path))
