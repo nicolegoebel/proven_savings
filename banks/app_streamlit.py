@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import json
 import plotly.graph_objects as go
 from pathlib import Path
 from data_analysis.bank_stats import BankSavingsAnalyzer
@@ -185,48 +186,58 @@ if predict_button:
         # Engagement Comparison Chart
         st.header("Startup Savings by Engagement Level")
         
-        # Generate points from 0 to num_clients
-        num_points = 10
-        client_points = np.linspace(0, num_clients, num_points)
+        # Load prediction data
+        with open(visualizer.static_dir / 'prediction_data.json', 'r') as f:
+            prediction_data = json.load(f)
         
-        # Create traces for each engagement level
+        # Create the plot
         fig = go.Figure()
         
+        # Define colors for engagement levels
         engagement_colors = {
             'frequently': '#4BC0C0',
             'often': '#FF9F40',
             'rarely': '#FF6384'
         }
         
-        for level in ['frequently', 'often', 'rarely']:
-            savings = [
-                analyzer.predict_annual_savings(
-                    num_clients=int(clients),
-                    company_types=['startup'],
-                    engagement_level=level
-                )['total_annual_savings']
-                for clients in client_points
-            ]
+        # Add traces for each engagement level
+        for level in ['rarely', 'often', 'frequently']:
+            data = prediction_data[level]
+            # Filter data points to only show >= 200 clients
+            companies = np.array(data['companies'])
+            savings = np.array(data['savings'])
+            mask = companies >= 200
             
             fig.add_trace(go.Scatter(
-                x=client_points,
-                y=savings,
+                x=companies[mask],
+                y=savings[mask],
                 name=level.capitalize(),
-                line=dict(color=engagement_colors[level])
+                line=dict(color=engagement_colors[level], width=2)
             ))
         
+        # Get y-axis range and step from plot config
+        y_max = prediction_data['plot_config']['y_max']
+        y_step = prediction_data['plot_config']['y_step']
+        
+        # Create evenly spaced y-axis ticks
+        y_ticks = list(range(0, int(y_max) + y_step, y_step))
+        
+        # Update layout
         fig.update_layout(
             xaxis_title="Number of Clients",
             yaxis_title="Annual Savings ($)",
             showlegend=True,
-            height=500
-        )
-        
-        # Update axis labels to use formatted numbers
-        fig.update_xaxes(tickformat=",d")
-        fig.update_yaxes(
-            ticktext=[format_number(x) for x in fig.data[0].y],
-            tickvals=fig.data[0].y
+            height=500,
+            yaxis=dict(
+                tickmode='array',
+                tickvals=y_ticks,
+                ticktext=[format_number(x) for x in y_ticks],
+                range=[0, y_max * 1.1]  # Add 10% padding at top
+            ),
+            xaxis=dict(
+                type='linear',  # Ensure linear scale
+                tickformat=',d'
+            )
         )
         
         st.plotly_chart(fig, use_container_width=True)
