@@ -7,10 +7,11 @@ from data_analysis.bank_stats import BankSavingsAnalyzer
 from data_analysis.model_visualization import SavingsModelVisualizer
 
 def format_number(num):
-    """Format numbers to be rounded to nearest 100 and use M/B for millions/billions.
-    For values under $1,000, show exact amount."""
+    """Format numbers to be rounded to nearest 10 for values under 1000,
+    nearest 100 for larger values, and use M/B for millions/billions."""
     if abs(num) < 1000:
-        return f"${num:.2f}"
+        num = round(num / 10) * 10  # Round to nearest 10
+        return f"${num:,.0f}"
     
     num = round(num / 100) * 100  # Round to nearest 100
     
