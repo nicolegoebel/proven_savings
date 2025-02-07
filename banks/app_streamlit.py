@@ -170,9 +170,11 @@ if predict_button:
         # Engagement Comparison Chart
         st.header("Startup Savings by Engagement Level")
         
-        # Generate points starting at 200
+        # Generate points from current to double clients
         num_points = 10
-        client_points = np.linspace(200, num_clients, num_points)
+        start_clients = max(200, num_clients)  # Start at current or 200, whichever is larger
+        end_clients = start_clients * 2  # Show up to double the clients
+        client_points = np.linspace(start_clients, end_clients, num_points)
         
         # Create traces for each engagement level
         fig = go.Figure()
@@ -201,7 +203,7 @@ if predict_button:
             ))
         
         fig.update_layout(
-            title="Startup Savings by Engagement Level (200+ clients)",
+            title=f"Potential Savings Growth: {format_number(start_clients)} to {format_number(end_clients)} Clients",
             xaxis_title="Number of Clients",
             yaxis_title="Annual Savings ($)",
             showlegend=True,
