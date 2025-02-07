@@ -198,7 +198,7 @@ class SavingsModelVisualizer:
         plt.xlabel('Number of Clients')
         plt.ylabel('Annual Savings ($)')
         plt.grid(True, alpha=0.3)
-        plt.legend()
+        plt.legend(loc='upper left')
         
         # Format axes
         plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))

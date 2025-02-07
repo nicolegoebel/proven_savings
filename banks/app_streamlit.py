@@ -36,6 +36,9 @@ static_dir = app_dir / 'static'
 analyzer = BankSavingsAnalyzer(data_dir)
 visualizer = SavingsModelVisualizer(data_dir)
 
+# Generate visualizations
+visualizer.generate_all_visualizations()
+
 # Title
 st.title("Potential Bank Savings with Proven")
 
