@@ -183,6 +183,67 @@ if predict_button:
                 f"At {num_clients:,} clients, expect {format_number(both_base)} in annual savings."
             )
         
+        # Create savings vs clients plot
+        st.header("Savings vs Number of Clients")
+        fig_savings = go.Figure()
+        
+        # Generate points from 0 to num_clients
+        client_points = np.linspace(200, num_clients, 50)
+        
+        # Calculate savings for each point
+        savings_points = []
+        for clients in client_points:
+            pred = analyzer.predict_annual_savings(
+                num_clients=int(clients),
+                company_types=company_types,
+                engagement_level=engagement_level
+            )
+            savings_points.append(pred['total_annual_savings'])
+        
+        # Add trace
+        fig_savings.add_trace(go.Scatter(
+            x=client_points,
+            y=savings_points,
+            mode='lines',
+            name='Predicted Savings',
+            line=dict(color='#4BC0C0', width=2)
+        ))
+        
+        # Add current point
+        fig_savings.add_trace(go.Scatter(
+            x=[num_clients],
+            y=[annual_savings['total_annual_savings']],
+            mode='markers',
+            name='Current Selection',
+            marker=dict(color='red', size=10)
+        ))
+        
+        # Calculate y-axis ticks
+        max_savings = max(savings_points)
+        y_step = 10**int(np.log10(max_savings/5))  # Round to nearest power of 10
+        y_max = ((int(max_savings / y_step) + 1) * y_step)  # Round up to nearest step
+        y_ticks = list(range(0, int(y_max) + y_step, y_step))
+        
+        # Update layout
+        fig_savings.update_layout(
+            xaxis_title="Number of Clients",
+            yaxis_title="Annual Savings ($)",
+            showlegend=True,
+            height=500,
+            yaxis=dict(
+                tickmode='array',
+                tickvals=y_ticks,
+                ticktext=[format_number(x) for x in y_ticks],
+                range=[0, y_max * 1.1]  # Add 10% padding at top
+            ),
+            xaxis=dict(
+                type='linear',  # Ensure linear scale
+                tickformat=',d'
+            )
+        )
+        
+        st.plotly_chart(fig_savings, use_container_width=True)
+
 
 # Engagement Level Plot
 # Generate prediction surface
