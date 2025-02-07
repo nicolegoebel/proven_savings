@@ -51,117 +51,23 @@ class SavingsModelVisualizer:
             df['company'] = df['Offer redeemed by']
             df['offer_id'] = df['Name of offer']
         
-    def prepare_training_data(self):
-        """Prepare training data for the model"""
-        # Aggregate data by company and month with projections for JPM
-        svb_monthly = self.aggregate_monthly_data(self.svb_data, 'SVB')
-        jpm_monthly = self.aggregate_monthly_data(self.jpm_data, 'JPM')
-        
-        # Create features
-        svb_features = self.create_features(svb_monthly, 'often')
-        jpm_features = self.create_features(jpm_monthly, 'frequently')
-        
-        # Add confidence weights - full weight for SVB, lower weights for projected JPM months
-        svb_features['confidence'] = 1.0
-        jpm_features['confidence'] = np.linspace(1.0, 0.7, len(jpm_features))
-        
-        return pd.concat([svb_features, jpm_features])
-    
-    def aggregate_monthly_data(self, df, bank_name):
-        """Aggregate savings data by month and project annual estimates for JPM"""
-        # Create month periods
-        df['month'] = df['date'].dt.to_period('M')
-        monthly_data = df.groupby(['month', 'company'])['savings_amount'].agg(['sum', 'count']).reset_index()
-        
-        if bank_name == 'JPM':
-            # Calculate average daily rate from the first month
-            first_month_data = df[df['date'].dt.month == self.jpm_start_date.month]
-            avg_daily_savings = first_month_data['savings_amount'].sum() / len(first_month_data['date'].dt.day.unique())
-            
-            # Project remaining months of 2025
-            remaining_months = 12 - (self.current_date.month - self.jpm_start_date.month + 1)
-            
-            if remaining_months > 0:
-                # Create growth factors for remaining months (higher growth initially, then stabilizing)
-                growth_factors = np.linspace(1.2, 1.0, remaining_months + 1)[1:]
-                
-                # Project each remaining month
-                for i in range(remaining_months):
-                    projected_month = self.current_date + pd.DateOffset(months=i+1)
-                    days_in_month = pd.Period(projected_month, freq='M').days_in_month
-                    
-                    # Project savings with growth factor
-                    projected_savings = avg_daily_savings * days_in_month * growth_factors[i]
-                    
-                    # Add to monthly data
-                    for company in monthly_data['company'].unique():
-                        new_row = {
-                            'month': pd.Period(projected_month, freq='M'),
-                            'company': company,
-                            'sum': projected_savings / len(monthly_data['company'].unique()),
-                            'count': monthly_data.groupby('company')['count'].mean().mean()
-                        }
-                        monthly_data = pd.concat([monthly_data, pd.DataFrame([new_row])], ignore_index=True)
-        
-        if bank_name == 'JPM':
-            # Calculate monthly averages per company
-            avg_monthly = monthly_data.groupby('company')['sum'].mean()
-            
-            # Project for 12 months with growth factors
-            # Assuming higher growth in early months, stabilizing later
-            growth_factors = np.array([1.2, 1.15, 1.1, 1.08, 1.06, 1.05, 1.04, 1.03, 1.02, 1.01, 1.0, 1.0])
-            
-            projected_months = []
-            for month in range(12):
-                month_data = monthly_data.copy()
-                month_data['sum'] = month_data['sum'] * growth_factors[month]
-                month_data['month'] = f'2025-{month+1:02d}'
-                projected_months.append(month_data)
-            
-            monthly_data = pd.concat(projected_months)
-        
-        return monthly_data
-    
-    def create_features(self, df, engagement_level):
-        """Create feature matrix for modeling"""
-        engagement_map = {'rarely': 0, 'often': 1, 'frequently': 2}
-        df['engagement_level'] = engagement_map[engagement_level]
-        df['num_companies'] = df.groupby('month')['company'].transform('nunique')
-        return df
-    
-    def train_model(self):
-        """Train a polynomial regression model with confidence weights and smoothing"""
-        data = self.prepare_training_data()
-        
-        # Create feature matrix
-        X = data[['num_companies', 'engagement_level']]
-        y = data['sum']
-        sample_weights = data['confidence']  # Use confidence as sample weights
-        
-        # Add a minimum threshold for predictions
-        min_savings = data['sum'].min() * 0.5  # Set minimum to half of smallest observed value
-        
-        # Create polynomial features with higher degree for better fit
-        poly = PolynomialFeatures(degree=3)
-        X_poly = poly.fit_transform(X)
-        
-        # Fit model with sample weights
-        model = LinearRegression()
-        model.fit(X_poly, y, sample_weight=sample_weights)
-        
-        return model, poly, min_savings
+
     
     def generate_prediction_surface(self):
-        """Generate prediction surface for visualization with smoothing"""
-        model, poly, min_savings = self.train_model()
-        
+        """Generate prediction surface with linear growth"""
         # Create grid of values with focus on lower range
-        # Use logarithmic spacing for better resolution at lower values
         num_companies = np.concatenate([
             np.linspace(200, 1000, 20),  # More points in lower range
             np.linspace(1000, 2000000, 30)  # Fewer points in higher range
         ])
-        engagement_levels = np.array([0, 1, 2])  # rarely, often, frequently
+        
+        # Define base savings per client and engagement multipliers
+        base_savings_per_client = 1000  # $1000 base savings per client
+        engagement_multipliers = {
+            'frequently': 1.5,
+            'often': 1.0,
+            'rarely': 0.5
+        }
         
         predictions = {}
         
@@ -169,30 +75,18 @@ class SavingsModelVisualizer:
         plt.figure(figsize=(12, 6))
         colors = {'frequently': '#4BC0C0', 'often': '#FF9F40', 'rarely': '#FF6384'}
         
-        for level in engagement_levels:
-            X_pred = np.column_stack([num_companies, np.full_like(num_companies, level)])
-            X_poly = poly.transform(X_pred)
-            pred = model.predict(X_poly)
+        for level, multiplier in engagement_multipliers.items():
+            # Calculate linear savings
+            savings = num_companies * base_savings_per_client * multiplier
             
-            # Apply smoothing and minimum threshold
-            pred = np.maximum(pred, min_savings)  # Ensure minimum savings
-            
-            # Apply additional smoothing for very low client numbers
-            low_range_mask = num_companies < 1000
-            if np.any(low_range_mask):
-                # Smooth transition for low client numbers
-                smoothing_factor = np.clip(num_companies[low_range_mask] / 1000, 0.1, 1)
-                pred[low_range_mask] *= smoothing_factor
-            
-            level_name = ['rarely', 'often', 'frequently'][int(level)]
-            predictions[level_name] = {
+            predictions[level] = {
                 'companies': num_companies.tolist(),
-                'savings': pred.tolist()
+                'savings': savings.tolist()
             }
             
             # Add to static plot
-            plt.plot(num_companies, pred, label=level_name.capitalize(),
-                     color=colors[level_name])
+            plt.plot(num_companies, savings, label=level.capitalize(),
+                     color=colors[level])
         
         plt.title('Projected Annual Savings by Number of Clients')
         plt.xlabel('Number of Clients')
@@ -225,9 +119,38 @@ class SavingsModelVisualizer:
         jpm_monthly_medians = self.jpm_data.groupby('month')['savings_amount'].median()
         
         # Create figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 12))
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
         
-        # Plot 1: Total Monthly Savings
+        # Plot total savings
+        ax1.plot(range(len(svb_monthly_totals)), svb_monthly_totals.values, 
+                label='SVB', color='blue', marker='o')
+        ax1.plot(range(len(jpm_monthly_totals)), jpm_monthly_totals.values, 
+                label='JPM', color='red', marker='o')
+        ax1.set_title('Total Monthly Savings')
+        ax1.set_ylabel('Total Savings ($)')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        
+        # Plot median savings
+        ax2.plot(range(len(svb_monthly_medians)), svb_monthly_medians.values, 
+                label='SVB', color='blue', marker='o')
+        ax2.plot(range(len(jpm_monthly_medians)), jpm_monthly_medians.values, 
+                label='JPM', color='red', marker='o')
+        ax2.set_title('Median Savings per Deal')
+        ax2.set_ylabel('Median Savings ($)')
+        ax2.set_xlabel('Month')
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+        
+        # Format y-axis labels
+        for ax in [ax1, ax2]:
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
+        
+        plt.tight_layout()
+        plt.savefig(self.static_dir / 'historical_trends.png', bbox_inches='tight', dpi=300)
+        plt.close()
+        
+
         ax1.plot(svb_monthly_totals.index.astype(str), svb_monthly_totals,
                 label='SVB Total Savings', marker='o', color='blue')
         ax1.plot(jpm_monthly_totals.index.astype(str), jpm_monthly_totals,
