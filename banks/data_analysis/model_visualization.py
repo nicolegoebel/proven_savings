@@ -130,7 +130,7 @@ class SavingsModelVisualizer:
         return df
     
     def train_model(self):
-        """Train a polynomial regression model with confidence weights and smoothing"""
+        """Train a polynomial regression model with confidence weights"""
         data = self.prepare_training_data()
         
         # Create feature matrix
@@ -138,47 +138,31 @@ class SavingsModelVisualizer:
         y = data['sum']
         sample_weights = data['confidence']  # Use confidence as sample weights
         
-        # Add a minimum threshold for predictions
-        min_savings = data['sum'].min() * 0.5  # Set minimum to half of smallest observed value
+        # Create polynomial features
+        poly = PolynomialFeatures(degree=2)
+        X_poly = poly.fit_transform(X)
         
-        # Fit linear model with sample weights
+        # Fit model with sample weights
         model = LinearRegression()
-        model.fit(X, y, sample_weight=sample_weights)
+        model.fit(X_poly, y, sample_weight=sample_weights)
         
-        return model, min_savings
+        return model, poly
     
     def generate_prediction_surface(self):
-        """Generate prediction surface for visualization with monotonic savings"""
-        model, min_savings = self.train_model()
+        """Generate prediction surface for visualization"""
+        model, poly = self.train_model()
         
-        # Create evenly spaced grid for number of companies
-        num_points = 50  # Number of points to generate
-        companies = np.linspace(200, 2000000, num_points)
-        
+        # Create grid of values
+        num_companies = np.linspace(10, 3000, 50)
         engagement_levels = np.array([0, 1, 2])  # rarely, often, frequently
-        engagement_names = ['rarely', 'often', 'frequently']
         
         predictions = {}
-        prev_level_pred = None  # Store previous level predictions for monotonicity
-        
         for level in engagement_levels:
-            # Generate predictions
-            X = np.column_stack([companies, np.full_like(companies, level)])
-            pred = model.predict(X)
-            
-            # Ensure predictions are monotonically increasing
-            for i in range(1, len(pred)):
-                pred[i] = max(pred[i], pred[i-1])
-            
-            # Ensure higher engagement levels have higher savings
-            if prev_level_pred is not None:
-                pred = np.maximum(pred, prev_level_pred * 1.1)  # 10% higher than previous level
-            
-            prev_level_pred = pred.copy()
-            
-            # Store results
-            predictions[engagement_names[int(level)]] = {
-                'companies': companies.tolist(),
+            X_pred = np.column_stack([num_companies, np.full_like(num_companies, level)])
+            X_poly = poly.transform(X_pred)
+            pred = model.predict(X_poly)
+            predictions[['rarely', 'often', 'frequently'][int(level)]] = {
+                'companies': num_companies.tolist(),
                 'savings': pred.tolist()
             }
         
@@ -187,58 +171,39 @@ class SavingsModelVisualizer:
             json.dump(predictions, f)
     
     def plot_historical_trends(self):
-        """Plot historical and projected savings trends with monthly medians"""
+        """Plot historical and projected savings trends"""
         plt.figure(figsize=(15, 7))
         
-        # Plot SVB data
+        # Plot SVB actual trends
         svb_monthly = self.aggregate_monthly_data(self.svb_data, 'SVB')
-        svb_totals = svb_monthly.groupby('month')['sum'].sum()
-        svb_medians = svb_monthly.groupby(['month'])['sum'].median()
-        svb_months = range(len(svb_totals))
-        
-        # Plot SVB total and median trends
-        plt.plot(svb_months, svb_totals,
-                label='SVB Total Savings', marker='o', color='blue')
-        plt.plot(svb_months, svb_medians,
-                label='SVB Median Company Savings', marker='s', color='lightblue')
+        svb_data = svb_monthly.groupby('month')['sum'].sum()
+        svb_months = range(len(svb_data))
+        plt.plot(svb_months, svb_data,
+                label='SVB (Medium Engagement) - Actual', marker='o', color='blue')
         
         # Plot JPM data
         jpm_monthly = self.aggregate_monthly_data(self.jpm_data, 'JPM')
-        jpm_totals = jpm_monthly.groupby('month')['sum'].sum()
-        jpm_medians = jpm_monthly.groupby(['month'])['sum'].median()
+        jpm_data = jpm_monthly.groupby('month')['sum'].sum()
         
         # Separate actual and projected data
         actual_months = (self.current_date.month - self.jpm_start_date.month + 1)
-        jpm_actual_totals = jpm_totals[:actual_months]
-        jpm_projected_totals = jpm_totals[actual_months-1:]
-        jpm_actual_medians = jpm_medians[:actual_months]
-        jpm_projected_medians = jpm_medians[actual_months-1:]
+        jpm_actual = jpm_data[:actual_months]
+        jpm_projected = jpm_data[actual_months-1:]
         
         # Plot actual JPM data
-        plt.plot(range(len(jpm_actual_totals)), jpm_actual_totals,
-                label='JPM Total Savings', marker='o', color='red')
-        plt.plot(range(len(jpm_actual_medians)), jpm_actual_medians,
-                label='JPM Median Company Savings', marker='s', color='lightcoral')
+        plt.plot(range(len(jpm_actual)), jpm_actual,
+                label='JPM (High Engagement) - Actual', marker='o', color='red')
         
         # Plot projected JPM data
-        projected_months = range(len(jpm_actual_totals)-1, len(jpm_totals))
-        plt.plot(projected_months, jpm_projected_totals,
-                label='JPM Total Savings (Projected)', linestyle='--', color='red')
-        plt.plot(projected_months, jpm_projected_medians,
-                label='JPM Median Company Savings (Projected)', linestyle='--', color='lightcoral')
+        projected_months = range(len(jpm_actual)-1, len(jpm_data))
+        plt.plot(projected_months, jpm_projected,
+                label='JPM (High Engagement) - Projected', linestyle='--', color='red')
         
-        # Add confidence intervals for projections
-        # For total savings
-        lower_bound_total = jpm_projected_totals * 0.8
-        upper_bound_total = jpm_projected_totals * 1.2
-        plt.fill_between(projected_months, lower_bound_total, upper_bound_total,
-                        color='red', alpha=0.1, label='Total Savings Confidence Interval')
-        
-        # For median savings
-        lower_bound_median = jpm_projected_medians * 0.8
-        upper_bound_median = jpm_projected_medians * 1.2
-        plt.fill_between(projected_months, lower_bound_median, upper_bound_median,
-                        color='lightcoral', alpha=0.1, label='Median Savings Confidence Interval')
+        # Add confidence interval for projections
+        lower_bound = jpm_projected * 0.8
+        upper_bound = jpm_projected * 1.2
+        plt.fill_between(projected_months, lower_bound, upper_bound,
+                        color='red', alpha=0.2, label='Projection Confidence Interval')
         
         plt.title('Bank Savings Trends (2024-2025)')
         plt.xlabel('Months Since Start')
