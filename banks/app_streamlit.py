@@ -183,68 +183,70 @@ if predict_button:
                 f"At {num_clients:,} clients, expect {format_number(both_base)} in annual savings."
             )
         
-        # Generate prediction surface
-        visualizer.generate_prediction_surface()
-        
-        # Engagement Comparison Chart
-        st.header("Startup Savings by Engagement Level")
-        
-        # Load prediction data
-        with open(visualizer.static_dir / 'prediction_data.json', 'r') as f:
-            prediction_data = json.load(f)
-        
-        # Create the plot
-        fig = go.Figure()
-        
-        # Define colors for engagement levels
-        engagement_colors = {
-            'frequently': '#4BC0C0',
-            'often': '#FF9F40',
-            'rarely': '#FF6384'
-        }
-        
-        # Add traces for each engagement level
-        max_savings = 0
-        for level in ['rarely', 'often', 'frequently']:
-            data = prediction_data[level]
-            # Filter data points to only show >= 200 clients
-            companies = np.array(data['companies'])
-            savings = np.array(data['savings'])
-            mask = companies >= 200
-            
-            fig.add_trace(go.Scatter(
-                x=companies[mask],
-                y=savings[mask],
-                name=level.capitalize(),
-                line=dict(color=engagement_colors[level], width=2)
-            ))
-            
-            max_savings = max(max_savings, max(savings[mask]))
-        
-        # Calculate y-axis ticks
-        y_step = 10**int(np.log10(max_savings/5))  # Round to nearest power of 10
-        y_max = ((int(max_savings / y_step) + 1) * y_step)  # Round up to nearest step
-        y_ticks = list(range(0, int(y_max) + y_step, y_step))
-        
-        # Update layout
-        fig.update_layout(
-            xaxis_title="Number of Clients",
-            yaxis_title="Annual Savings ($)",
-            showlegend=True,
-            height=500,
-            yaxis=dict(
-                tickmode='array',
-                tickvals=y_ticks,
-                ticktext=[format_number(x) for x in y_ticks],
-                range=[0, y_max * 1.1]  # Add 10% padding at top
-            ),
-            xaxis=dict(
-                type='linear',  # Ensure linear scale
-                tickformat=',d'
-            )
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+
+# Engagement Level Plot
+# Generate prediction surface
+visualizer.generate_prediction_surface()
+
+# Engagement Comparison Chart
+st.header("Startup Savings by Engagement Level")
+
+# Load prediction data
+with open(visualizer.static_dir / 'prediction_data.json', 'r') as f:
+    prediction_data = json.load(f)
+
+# Create the plot
+fig = go.Figure()
+
+# Define colors for engagement levels
+engagement_colors = {
+    'frequently': '#4BC0C0',
+    'often': '#FF9F40',
+    'rarely': '#FF6384'
+}
+
+# Add traces for each engagement level
+max_savings = 0
+for level in ['rarely', 'often', 'frequently']:
+    data = prediction_data[level]
+    # Filter data points to only show >= 200 clients
+    companies = np.array(data['companies'])
+    savings = np.array(data['savings'])
+    mask = companies >= 200
+    
+    fig.add_trace(go.Scatter(
+        x=companies[mask],
+        y=savings[mask],
+        name=level.capitalize(),
+        line=dict(color=engagement_colors[level], width=2)
+    ))
+    
+    max_savings = max(max_savings, max(savings[mask]))
+
+# Calculate y-axis ticks
+y_step = 10**int(np.log10(max_savings/5))  # Round to nearest power of 10
+y_max = ((int(max_savings / y_step) + 1) * y_step)  # Round up to nearest step
+y_ticks = list(range(0, int(y_max) + y_step, y_step))
+
+# Update layout
+fig.update_layout(
+    xaxis_title="Number of Clients",
+    yaxis_title="Annual Savings ($)",
+    showlegend=True,
+    height=500,
+    yaxis=dict(
+        tickmode='array',
+        tickvals=y_ticks,
+        ticktext=[format_number(x) for x in y_ticks],
+        range=[0, y_max * 1.1]  # Add 10% padding at top
+    ),
+    xaxis=dict(
+        type='linear',  # Ensure linear scale
+        tickformat=',d'
+    )
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # Historical Data Section
 st.header("Historical Bank Data")
