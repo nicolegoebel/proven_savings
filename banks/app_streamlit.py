@@ -185,15 +185,20 @@ if predict_button:
             'rarely': '#FF6384'
         }
         
+        # Calculate multipliers for each engagement level
+        multipliers = {
+            'frequently': 1.5,
+            'often': 1.0,
+            'rarely': 0.5
+        }
+        
+        max_savings = 0
+        
         for level in ['frequently', 'often', 'rarely']:
-            savings = [
-                analyzer.predict_annual_savings(
-                    num_clients=int(clients),
-                    company_types=['startup'],
-                    engagement_level=level
-                )['total_annual_savings']
-                for clients in client_points
-            ]
+            # Calculate linear growth based on number of clients
+            base_savings_per_client = 1000  # $1000 base savings per client
+            savings = client_points * base_savings_per_client * multipliers[level]
+            max_savings = max(max_savings, max(savings))
             
             fig.add_trace(go.Scatter(
                 x=client_points,
@@ -202,19 +207,27 @@ if predict_button:
                 line=dict(color=engagement_colors[level])
             ))
         
+        # Calculate nice round numbers for y-axis ticks
+        magnitude = 10 ** (len(str(int(max_savings))) - 1)
+        max_y = math.ceil(max_savings / magnitude) * magnitude
+        y_ticks = np.linspace(0, max_y, 6)  # 6 evenly spaced ticks
+        
         fig.update_layout(
             title=f"Potential Savings Growth: {format_number(start_clients)} to {format_number(end_clients)} Clients",
             xaxis_title="Number of Clients",
             yaxis_title="Annual Savings ($)",
             showlegend=True,
-            height=500
-        )
-        
-        # Update axis labels to use formatted numbers
-        fig.update_xaxes(tickformat=",d")
-        fig.update_yaxes(
-            ticktext=[format_number(x) for x in fig.data[0].y],
-            tickvals=fig.data[0].y
+            height=500,
+            yaxis=dict(
+                tickmode='array',
+                tickvals=y_ticks,
+                ticktext=[format_number(y) for y in y_ticks]
+            ),
+            xaxis=dict(
+                tickmode='array',
+                tickvals=np.linspace(start_clients, end_clients, 6),
+                ticktext=[format_number(x) for x in np.linspace(start_clients, end_clients, 6)]
+            )
         )
         
         st.plotly_chart(fig, use_container_width=True)
