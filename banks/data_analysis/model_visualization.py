@@ -189,66 +189,105 @@ class SavingsModelVisualizer:
             json.dump(predictions, f)
     
     def plot_historical_trends(self):
-        """Plot historical and projected savings trends with monthly medians"""
-        plt.figure(figsize=(15, 7))
+        """Plot historical savings trends in two separate plots for total and median savings"""
+        # Calculate SVB monthly stats
+        self.svb_data['month'] = self.svb_data['date'].dt.to_period('M')
+        svb_monthly_totals = self.svb_data.groupby('month')['savings_amount'].sum()
+        svb_monthly_medians = self.svb_data.groupby('month')['savings_amount'].median()
         
-        # Plot SVB data
-        svb_monthly = self.aggregate_monthly_data(self.svb_data, 'SVB')
-        svb_totals = svb_monthly.groupby('month')['sum'].sum()
-        svb_medians = svb_monthly.groupby(['month'])['sum'].median()
-        svb_months = range(len(svb_totals))
+        # Calculate JPM monthly stats
+        self.jpm_data['month'] = self.jpm_data['date'].dt.to_period('M')
+        jpm_monthly_totals = self.jpm_data.groupby('month')['savings_amount'].sum()
+        jpm_monthly_medians = self.jpm_data.groupby('month')['savings_amount'].median()
         
-        # Plot SVB total and median trends
-        plt.plot(svb_months, svb_totals,
+        # Create figure with two subplots
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 12))
+        
+        # Plot 1: Total Monthly Savings
+        ax1.plot(svb_monthly_totals.index.astype(str), svb_monthly_totals,
                 label='SVB Total Savings', marker='o', color='blue')
-        plt.plot(svb_months, svb_medians,
-                label='SVB Median Company Savings', marker='s', color='lightblue')
-        
-        # Plot JPM data
-        jpm_monthly = self.aggregate_monthly_data(self.jpm_data, 'JPM')
-        jpm_totals = jpm_monthly.groupby('month')['sum'].sum()
-        jpm_medians = jpm_monthly.groupby(['month'])['sum'].median()
-        
-        # Separate actual and projected data
-        actual_months = (self.current_date.month - self.jpm_start_date.month + 1)
-        jpm_actual_totals = jpm_totals[:actual_months]
-        jpm_projected_totals = jpm_totals[actual_months-1:]
-        jpm_actual_medians = jpm_medians[:actual_months]
-        jpm_projected_medians = jpm_medians[actual_months-1:]
-        
-        # Plot actual JPM data
-        plt.plot(range(len(jpm_actual_totals)), jpm_actual_totals,
+        ax1.plot(jpm_monthly_totals.index.astype(str), jpm_monthly_totals,
                 label='JPM Total Savings', marker='o', color='red')
-        plt.plot(range(len(jpm_actual_medians)), jpm_actual_medians,
-                label='JPM Median Company Savings', marker='s', color='lightcoral')
         
-        # Plot projected JPM data
-        projected_months = range(len(jpm_actual_totals)-1, len(jpm_totals))
-        plt.plot(projected_months, jpm_projected_totals,
-                label='JPM Total Savings (Projected)', linestyle='--', color='red')
-        plt.plot(projected_months, jpm_projected_medians,
-                label='JPM Median Company Savings (Projected)', linestyle='--', color='lightcoral')
+        # Project JPM totals using SVB's growth rate
+        if len(jpm_monthly_totals) > 0 and len(svb_monthly_totals) > 1:
+            # Calculate SVB's average monthly growth rate
+            svb_growth_rates = svb_monthly_totals.pct_change().dropna()
+            avg_monthly_growth = 1 + svb_growth_rates.mean()
+            
+            # Project remaining months
+            remaining_months = 12 - len(jpm_monthly_totals)
+            if remaining_months > 0:
+                last_total = jpm_monthly_totals.iloc[-1]
+                projected_totals = [last_total * (avg_monthly_growth ** (i+1)) 
+                                  for i in range(remaining_months)]
+                
+                # Create month labels for projections
+                last_month = jpm_monthly_totals.index[-1]
+                projected_months = [pd.Period(last_month) + i + 1 
+                                  for i in range(remaining_months)]
+                
+                # Plot projections
+                ax1.plot([last_month.strftime('%Y-%m')] + 
+                        [m.strftime('%Y-%m') for m in projected_months],
+                        [last_total] + projected_totals,
+                        label='JPM Projected', linestyle='--', color='red')
+                
+                # Add confidence interval
+                lower_bound = np.array([last_total] + projected_totals) * 0.8
+                upper_bound = np.array([last_total] + projected_totals) * 1.2
+                ax1.fill_between(
+                    [last_month.strftime('%Y-%m')] + 
+                    [m.strftime('%Y-%m') for m in projected_months],
+                    lower_bound, upper_bound,
+                    color='red', alpha=0.1)
         
-        # Add confidence intervals for projections
-        # For total savings
-        lower_bound_total = jpm_projected_totals * 0.8
-        upper_bound_total = jpm_projected_totals * 1.2
-        plt.fill_between(projected_months, lower_bound_total, upper_bound_total,
-                        color='red', alpha=0.1, label='Total Savings Confidence Interval')
+        ax1.set_title('Total Monthly Savings')
+        ax1.set_xlabel('Month')
+        ax1.set_ylabel('Total Monthly Savings ($)')
+        ax1.tick_params(axis='x', rotation=45)
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
         
-        # For median savings
-        lower_bound_median = jpm_projected_medians * 0.8
-        upper_bound_median = jpm_projected_medians * 1.2
-        plt.fill_between(projected_months, lower_bound_median, upper_bound_median,
-                        color='lightcoral', alpha=0.1, label='Median Savings Confidence Interval')
+        # Plot 2: Median Savings per Deal
+        ax2.plot(svb_monthly_medians.index.astype(str), svb_monthly_medians,
+                label='SVB Median per Deal', marker='s', color='blue')
+        ax2.plot(jpm_monthly_medians.index.astype(str), jpm_monthly_medians,
+                label='JPM Median per Deal', marker='s', color='red')
         
-        plt.title('Bank Savings Trends (2024-2025)')
-        plt.xlabel('Months Since Start')
-        plt.ylabel('Total Monthly Savings ($)')
+        # Project JPM medians
+        if len(jpm_monthly_medians) > 0:
+            # Use same growth rate as totals but with smaller factor
+            remaining_months = 12 - len(jpm_monthly_medians)
+            if remaining_months > 0:
+                last_median = jpm_monthly_medians.iloc[-1]
+                projected_medians = [last_median * (avg_monthly_growth ** (i+1)) 
+                                   for i in range(remaining_months)]
+                
+                ax2.plot([last_month.strftime('%Y-%m')] + 
+                        [m.strftime('%Y-%m') for m in projected_months],
+                        [last_median] + projected_medians,
+                        label='JPM Projected', linestyle='--', color='red')
+                
+                # Add confidence interval
+                lower_bound = np.array([last_median] + projected_medians) * 0.8
+                upper_bound = np.array([last_median] + projected_medians) * 1.2
+                ax2.fill_between(
+                    [last_month.strftime('%Y-%m')] + 
+                    [m.strftime('%Y-%m') for m in projected_months],
+                    lower_bound, upper_bound,
+                    color='red', alpha=0.1)
         
-        # Add month labels
-        all_months = pd.date_range(self.svb_start_date, self.jpm_start_date + pd.DateOffset(months=11), freq='ME')
-        plt.xticks(range(len(all_months)), [d.strftime('%Y-%m') for d in all_months], rotation=45)
+        ax2.set_title('Median Savings per Deal')
+        ax2.set_xlabel('Month')
+        ax2.set_ylabel('Median Savings per Deal ($)')
+        ax2.tick_params(axis='x', rotation=45)
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.savefig(self.static_dir / 'historical_trends.png', bbox_inches='tight', dpi=300)
+        plt.close()
         
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.grid(True, alpha=0.3)

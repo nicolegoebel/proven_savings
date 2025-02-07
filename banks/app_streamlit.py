@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import math
 import plotly.graph_objects as go
 from pathlib import Path
 from data_analysis.bank_stats import BankSavingsAnalyzer
@@ -169,14 +170,24 @@ if predict_button:
         # Engagement Comparison Chart
         st.header("Startup Savings by Engagement Level")
         
-        # Generate points from 0 to num_clients
-        num_points = 10
-        client_points = np.linspace(0, num_clients, num_points)
+        # Set fixed range for x-axis starting at 200
+        min_clients = 200
+        x_range = np.linspace(min_clients, num_clients, 10)
         
-        # Create traces for each engagement level
-        fig = go.Figure()
+        # Create figure with fixed ranges
+        fig = go.Figure(layout=go.Layout(
+            xaxis=dict(
+                range=[min_clients, num_clients],  # Force start at 200
+                autorange=False
+            ),
+            yaxis=dict(
+                rangemode='nonnegative',  # Force start at 0
+                autorange=True
+            )
+        ))
         
-        engagement_colors = {
+        # Add traces for each engagement level
+        colors = {
             'frequently': '#4BC0C0',
             'often': '#FF9F40',
             'rarely': '#FF6384'
@@ -185,38 +196,48 @@ if predict_button:
         for level in ['frequently', 'often', 'rarely']:
             savings = [
                 analyzer.predict_annual_savings(
-                    num_clients=int(clients),
+                    num_clients=int(x),
                     company_types=['startup'],
                     engagement_level=level
                 )['total_annual_savings']
-                for clients in client_points
+                for x in x_range
             ]
             
             fig.add_trace(go.Scatter(
-                x=client_points,
+                x=x_range,
                 y=savings,
                 name=level.capitalize(),
-                line=dict(color=engagement_colors[level])
+                line=dict(color=colors[level])
             ))
         
+        # Update layout with fixed formatting
         fig.update_layout(
+            title="Startup Savings by Engagement Level (200+ clients)",
             xaxis_title="Number of Clients",
             yaxis_title="Annual Savings ($)",
             showlegend=True,
             height=500
         )
         
-        # Update axis labels to use formatted numbers
-        fig.update_xaxes(tickformat=",d")
+        # Force axis formatting
+        fig.update_xaxes(
+            tickformat=',d',  # Add commas to numbers
+            dtick=(num_clients - min_clients) / 5  # Show 5 ticks
+        )
+        
         fig.update_yaxes(
-            ticktext=[format_number(x) for x in fig.data[0].y],
-            tickvals=fig.data[0].y
+            tickprefix='$',  # Add dollar sign
+            tickformat=',d'  # Add commas to numbers
         )
         
         st.plotly_chart(fig, use_container_width=True)
 
 # Historical Data Section
 st.header("Historical Bank Data")
+
+# Display historical trends
+st.subheader('Historical Savings Trends')
+st.image(str(data_dir.parent / 'static' / 'historical_trends.png'), use_column_width=True)
 
 # Get statistics
 stats = analyzer.get_all_stats()
