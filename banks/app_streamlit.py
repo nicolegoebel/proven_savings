@@ -6,6 +6,22 @@ from pathlib import Path
 from data_analysis.bank_stats import BankSavingsAnalyzer
 from data_analysis.model_visualization import SavingsModelVisualizer
 
+def format_number(num):
+    """Format numbers to be rounded to nearest 10 for values under 1000,
+    nearest 100 for larger values, and use M/B for millions/billions."""
+    if abs(num) < 1000:
+        num = round(num / 10) * 10  # Round to nearest 10
+        return f"${num:,.0f}"
+    
+    num = round(num / 100) * 100  # Round to nearest 100
+    
+    if abs(num) >= 1e9:
+        return f"${num/1e9:.1f}B"
+    elif abs(num) >= 1e6:
+        return f"${num/1e6:.1f}M"
+    else:
+        return f"${num:,.0f}"
+
 # Set page config
 st.set_page_config(
     page_title="Potential Bank Savings with Proven",
@@ -27,10 +43,10 @@ with st.sidebar:
     # Number of Clients slider
     num_clients = st.slider(
         "Number of Clients",
-        min_value=10000,
-        max_value=3000000,
-        value=10000,
-        step=10000,
+        min_value=200,
+        max_value=2000000,
+        value=200,
+        step=200,
         format="%d"
     )
     
@@ -86,21 +102,21 @@ if predict_button:
             with metrics_col1:
                 st.metric(
                     "Total Annual Savings",
-                    f"${annual_savings['total_annual_savings']:,.2f}"
+                    format_number(annual_savings['total_annual_savings'])
                 )
                 st.metric(
                     "Average Monthly Savings",
-                    f"${annual_savings['monthly_savings']:,.2f}"
+                    format_number(annual_savings['monthly_savings'])
                 )
             
             with metrics_col2:
                 st.metric(
                     "Annual Savings per Company",
-                    f"${annual_savings['avg_savings_per_company']:,.2f}"
+                    format_number(annual_savings['avg_savings_per_company'])
                 )
                 st.metric(
                     "Monthly Savings per Company",
-                    f"${annual_savings['avg_savings_per_company']/12:,.2f}"
+                    format_number(annual_savings['avg_savings_per_company']/12)
                 )
         
         # Column 2: Top Offers
@@ -127,7 +143,7 @@ if predict_button:
             
             st.info(
                 f"**Startups:** For every doubling of clients, savings increase by {growth_rate:.1f}%. "
-                f"At {num_clients:,} clients, expect ${startup_base:,.2f} in annual savings."
+                f"At {num_clients:,} clients, expect {format_number(startup_base)} in annual savings."
             )
         
         if "sme" in company_types:
@@ -137,7 +153,7 @@ if predict_button:
             
             st.warning(
                 f"**SMEs:** For every doubling of clients, savings increase by {growth_rate:.1f}%. "
-                f"At {num_clients:,} clients, expect ${sme_base:,.2f} in annual savings."
+                f"At {num_clients:,} clients, expect {format_number(sme_base)} in annual savings."
             )
         
         if len(company_types) == 2:
@@ -147,7 +163,7 @@ if predict_button:
             
             st.success(
                 f"**Mixed Portfolio:** For every doubling of clients, savings increase by {growth_rate:.1f}%. "
-                f"At {num_clients:,} clients, expect ${both_base:,.2f} in annual savings."
+                f"At {num_clients:,} clients, expect {format_number(both_base)} in annual savings."
             )
         
         # Engagement Comparison Chart
@@ -192,7 +208,10 @@ if predict_button:
         
         # Update axis labels to use formatted numbers
         fig.update_xaxes(tickformat=",d")
-        fig.update_yaxes(tickprefix="$", tickformat=",")
+        fig.update_yaxes(
+            ticktext=[format_number(x) for x in fig.data[0].y],
+            tickvals=fig.data[0].y
+        )
         
         st.plotly_chart(fig, use_container_width=True)
 
@@ -209,33 +228,52 @@ col1, col2 = st.columns(2)
 with col1:
     st.subheader("JPM Statistics")
     st.markdown(f"""
-    * Total Savings: ${stats['JPM']['total_savings']:,.2f}
-    * Avg per Redemption: ${stats['JPM']['avg_savings_per_redemption']:,.2f}
-    * Unique Companies: {stats['JPM']['unique_companies']}
-    * Total Deal Redemptions: {stats['JPM']['total_redemptions']}
+    * Total Savings: {format_number(stats['JPM']['total_savings'])}
+    * Avg per Redemption: {format_number(stats['JPM']['avg_savings_per_redemption'])}
+    * Unique Companies: {stats['JPM']['unique_companies']:,}
+    * Total Deal Redemptions: {stats['JPM']['total_redemptions']:,}
     * Avg Redemptions per Company: {stats['JPM']['avg_redemptions_per_company']:.1f}
     """)
+    
+    # Display top 10 companies for JPM
+    st.subheader("Top 10 Companies by Savings")
+    top_jpm = analyzer.get_top_companies(bank='JPM', n=10)
+    for idx, row in top_jpm.iterrows():
+        st.markdown(f"{idx + 1}. **{row['company']}**")
+        st.markdown(f"   - Total Savings: {format_number(row['total_savings'])}")
+        st.markdown(f"   - Median per Deal: {format_number(row['median_savings'])}")
 
 # SVB Statistics
 with col2:
     st.subheader("SVB Statistics")
     st.markdown(f"""
-    * Total Savings: ${stats['SVB']['total_savings']:,.2f}
-    * Avg per Redemption: ${stats['SVB']['avg_savings_per_redemption']:,.2f}
-    * Unique Companies: {stats['SVB']['unique_companies']}
-    * Total Deal Redemptions: {stats['SVB']['total_redemptions']}
+    * Total Savings: {format_number(stats['SVB']['total_savings'])}
+    * Avg per Redemption: {format_number(stats['SVB']['avg_savings_per_redemption'])}
+    * Unique Companies: {stats['SVB']['unique_companies']:,}
+    * Total Deal Redemptions: {stats['SVB']['total_redemptions']:,}
     * Avg Redemptions per Company: {stats['SVB']['avg_redemptions_per_company']:.1f}
     """)
+    
+    # Display top 10 companies for SVB
+    st.subheader("Top 10 Companies by Savings")
+    top_svb = analyzer.get_top_companies(bank='SVB', n=10)
+    for idx, row in top_svb.iterrows():
+        st.markdown(f"{idx + 1}. **{row['company']}**")
+        st.markdown(f"   - Total Savings: {format_number(row['total_savings'])}")
+        st.markdown(f"   - Median per Deal: {format_number(row['median_savings'])}")
 
 # Display visualizations
 st.header("Historical Visualizations")
 
-col1, col2 = st.columns(2)
+# Get the directory containing the current script
+script_dir = Path(__file__).parent
 
-with col1:
-    st.subheader("Historical Savings Trends")
-    st.image("static/historical_trends.png")
+# Historical Savings Trends
+st.subheader("Historical Savings Trends")
+image_path = script_dir / "static" / "historical_trends.png"
+st.image(str(image_path))
 
-with col2:
-    st.subheader("Company Savings Distribution")
-    st.image("static/company_distribution.png")
+# Company Distribution
+st.subheader("Company Savings Distribution")
+image_path = script_dir / "static" / "company_distribution.png"
+st.image(str(image_path))
