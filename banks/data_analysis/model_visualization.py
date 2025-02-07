@@ -201,8 +201,8 @@ class SavingsModelVisualizer:
         plt.legend()
         
         # Format axes
-        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
-        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${format(int(x), ',')}'))
+        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
         # Save static plot
         plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300)
