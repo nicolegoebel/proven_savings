@@ -183,6 +183,9 @@ if predict_button:
                 f"At {num_clients:,} clients, expect {format_number(both_base)} in annual savings."
             )
         
+        # Generate prediction surface
+        visualizer.generate_prediction_surface()
+        
         # Engagement Comparison Chart
         st.header("Startup Savings by Engagement Level")
         
@@ -201,6 +204,7 @@ if predict_button:
         }
         
         # Add traces for each engagement level
+        max_savings = 0
         for level in ['rarely', 'often', 'frequently']:
             data = prediction_data[level]
             # Filter data points to only show >= 200 clients
@@ -214,12 +218,12 @@ if predict_button:
                 name=level.capitalize(),
                 line=dict(color=engagement_colors[level], width=2)
             ))
+            
+            max_savings = max(max_savings, max(savings[mask]))
         
-        # Get y-axis range and step from plot config
-        y_max = prediction_data['plot_config']['y_max']
-        y_step = prediction_data['plot_config']['y_step']
-        
-        # Create evenly spaced y-axis ticks
+        # Calculate y-axis ticks
+        y_step = 10**int(np.log10(max_savings/5))  # Round to nearest power of 10
+        y_max = ((int(max_savings / y_step) + 1) * y_step)  # Round up to nearest step
         y_ticks = list(range(0, int(y_max) + y_step, y_step))
         
         # Update layout
