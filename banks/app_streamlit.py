@@ -43,10 +43,10 @@ with st.sidebar:
     # Number of Clients slider
     num_clients = st.slider(
         "Number of Clients",
-        min_value=10000,
+        min_value=200,
         max_value=3000000,
-        value=10000,
-        step=10000,
+        value=200,
+        step=200,
         format="%d"
     )
     
