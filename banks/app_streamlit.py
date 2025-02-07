@@ -29,8 +29,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize the analyzers
-data_dir = Path(__file__).parent / 'data'
+# Initialize paths and analyzers
+app_dir = Path(__file__).parent
+data_dir = app_dir / 'data'
+static_dir = app_dir / 'static'
 analyzer = BankSavingsAnalyzer(data_dir)
 visualizer = SavingsModelVisualizer(data_dir)
 
@@ -284,12 +286,12 @@ st.header("Historical Visualizations")
 
 # Historical Savings Trends
 st.subheader("Historical Savings Trends")
-st.image(str(data_dir.parent / 'static' / 'historical_trends.png'), use_container_width=True)
+st.image(str(static_dir / 'historical_trends.png'), use_container_width=True)
 
 # Company Distribution
 st.subheader("Company Savings Distribution")
-st.image(str(data_dir.parent / 'static' / 'company_distribution.png'), use_container_width=True)
+st.image(str(static_dir / 'company_distribution.png'), use_container_width=True)
 
 # Savings vs Clients
 st.subheader("Projected Annual Savings by Number of Clients")
-st.image(str(data_dir.parent / 'static' / 'savings_vs_clients.png'), use_container_width=True)
+st.image(str(static_dir / 'savings_vs_clients.png'), use_container_width=True)
