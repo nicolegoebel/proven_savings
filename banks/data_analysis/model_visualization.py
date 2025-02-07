@@ -155,9 +155,9 @@ class SavingsModelVisualizer:
         """Generate prediction surface for visualization with smoothing"""
         model, poly, min_savings = self.train_model()
         
-        # Create grid of values with focus on lower range
-        # Use logarithmic spacing for better resolution at lower values
+        # Create grid of values including points below 200 for linear interpolation
         num_companies = np.concatenate([
+            np.linspace(0, 200, 10),     # Linear range to zero
             np.linspace(200, 1000, 20),  # More points in lower range
             np.linspace(1000, 2000000, 30)  # Fewer points in higher range
         ])
@@ -165,19 +165,27 @@ class SavingsModelVisualizer:
         
         predictions = {}
         for level in engagement_levels:
+            # Get prediction for 200 clients to use as reference
+            X_ref = np.array([[200, level]])
+            X_ref_poly = poly.transform(X_ref)
+            pred_at_200 = model.predict(X_ref_poly)[0]
+            
+            # Generate predictions for all points
             X_pred = np.column_stack([num_companies, np.full_like(num_companies, level)])
             X_poly = poly.transform(X_pred)
             pred = model.predict(X_poly)
             
-            # Apply smoothing and minimum threshold
-            pred = np.maximum(pred, min_savings)  # Ensure minimum savings
+            # Create linear interpolation for values below 200
+            below_200_mask = num_companies <= 200
+            if np.any(below_200_mask):
+                # Calculate linear slope from 0 to pred_at_200
+                slope = pred_at_200 / 200
+                pred[below_200_mask] = num_companies[below_200_mask] * slope
             
-            # Apply additional smoothing for very low client numbers
-            low_range_mask = num_companies < 1000
-            if np.any(low_range_mask):
-                # Smooth transition for low client numbers
-                smoothing_factor = np.clip(num_companies[low_range_mask] / 1000, 0.1, 1)
-                pred[low_range_mask] *= smoothing_factor
+            # Apply smoothing for values above 200
+            above_200_mask = num_companies > 200
+            if np.any(above_200_mask):
+                pred[above_200_mask] = np.maximum(pred[above_200_mask], min_savings)
             
             predictions[['rarely', 'often', 'frequently'][int(level)]] = {
                 'companies': num_companies.tolist(),
