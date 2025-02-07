@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proven_savings"
+version = "0.1.0"
+authors = [
+    { name="Nicole Goebel", email="nicolegoebel@gmail.com" },
+]
+description = "Bank savings prediction app"
+requires-python = ">=3.8"
+dependencies = [
+    "streamlit>=1.40.2",
+    "pandas",
+    "numpy",
+    "plotly",
+    "matplotlib",
+    "scikit-learn",
+    "setuptools",
+]

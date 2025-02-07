@@ -1,0 +1,7 @@
+streamlit==1.40.2
+pandas
+numpy
+plotly
+matplotlib
+scikit-learn
+setuptools>=61.0
