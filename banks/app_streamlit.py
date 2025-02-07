@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import math
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 from pathlib import Path
 from data_analysis.bank_stats import BankSavingsAnalyzer
 from data_analysis.model_visualization import SavingsModelVisualizer
@@ -143,102 +142,93 @@ if predict_button:
         
         # Calculate insights for each company type
         if "startup" in company_types:
-            startup_base = num_clients * 1000 * (1.5 if engagement_level == "frequently" else 1.0 if engagement_level == "often" else 0.5)
-            startup_doubled = startup_base * 2
-            growth_rate = ((startup_doubled / startup_base) - 1) * 100 if startup_base > 0 else 100
-            
+            # Calculate savings based on SVB benchmark ($188 per client)
+            startup_savings = num_clients * 188 * (1.5 if engagement_level == "frequently" else 1.0 if engagement_level == "often" else 0.5)
             st.info(
-                f"**Startups:** For every doubling of clients, savings increase by {growth_rate:.1f}%. "
-                f"At {num_clients:,} clients, expect {format_number(startup_base)} in annual savings."
+                f"**Startups:** With {num_clients:,} clients at {engagement_level} engagement level, "
+                f"expect {format_number(startup_savings)} in annual savings."
             )
         
         if "sme" in company_types:
-            sme_base = num_clients * 1000 * 0.7 * (1.5 if engagement_level == "frequently" else 1.0 if engagement_level == "often" else 0.5)
-            sme_doubled = sme_base * 2
-            growth_rate = ((sme_doubled / sme_base) - 1) * 100 if sme_base > 0 else 100
-            
+            # SMEs have 30% lower savings on average
+            sme_savings = num_clients * 188 * 0.7 * (1.5 if engagement_level == "frequently" else 1.0 if engagement_level == "often" else 0.5)
             st.warning(
-                f"**SMEs:** For every doubling of clients, savings increase by {growth_rate:.1f}%. "
-                f"At {num_clients:,} clients, expect {format_number(sme_base)} in annual savings."
+                f"**SMEs:** With {num_clients:,} clients at {engagement_level} engagement level, "
+                f"expect {format_number(sme_savings)} in annual savings."
             )
         
         if len(company_types) == 2:
-            both_base = (startup_base + sme_base) / 2
-            both_doubled = both_base * 2
-            growth_rate = ((both_doubled / both_base) - 1) * 100 if both_base > 0 else 100
-            
+            mixed_savings = (startup_savings + sme_savings) / 2
             st.success(
-                f"**Mixed Portfolio:** For every doubling of clients, savings increase by {growth_rate:.1f}%. "
-                f"At {num_clients:,} clients, expect {format_number(both_base)} in annual savings."
+                f"**Mixed Portfolio:** With {num_clients:,} total clients at {engagement_level} engagement level, "
+                f"expect an average of {format_number(mixed_savings)} in annual savings."
             )
         
-        # Engagement Comparison Chart
-        st.header("Startup Savings by Engagement Level")
+        # Display Savings Projections Section
+        st.header("Savings Projections")
         
-        # Generate points from current to double clients
-        num_points = 10
-        start_clients = max(200, num_clients)  # Start at current or 200, whichever is larger
-        end_clients = start_clients * 2  # Show up to double the clients
-        client_points = np.linspace(start_clients, end_clients, num_points)
+        # Create dynamic plot for selected number of clients
+        st.subheader("Projected Growth in Annual Savings")
         
-        # Create traces for each engagement level
-        fig = go.Figure()
+        # Create plot points for current and doubled clients
+        client_points = np.array([num_clients, num_clients * 2])
         
-        engagement_colors = {
-            'frequently': '#4BC0C0',
-            'often': '#FF9F40',
-            'rarely': '#FF6384'
-        }
+        # Create plot
+        fig = plt.figure(figsize=(12, 6))
         
-        # Calculate multipliers for each engagement level
-        multipliers = {
-            'frequently': 1.5,
-            'often': 1.0,
-            'rarely': 0.5
-        }
+        # Colors for different engagement levels
+        colors = {'Frequently': '#4BC0C0', 'Often': '#FF9F40', 'Rarely': '#FF6384'}
+        multipliers = {'Frequently': 1.5, 'Often': 1.0, 'Rarely': 0.5}
         
-        max_savings = 0
+        # Plot for each company type and engagement level
+        if "startup" in company_types:
+            for level, mult in multipliers.items():
+                savings = client_points * 188 * mult
+                plt.plot(client_points, savings, 
+                         label=f'Startups - {level} (x{mult})',
+                         color=colors[level],
+                         linestyle='-' if level == engagement_level.capitalize() else '--',
+                         linewidth=3 if level == engagement_level.capitalize() else 1)
+                if level == engagement_level.capitalize():
+                    plt.scatter(client_points, savings, color=colors[level], s=100)
         
-        for level in ['frequently', 'often', 'rarely']:
-            # Calculate linear growth based on number of clients
-            base_savings_per_client = 1000  # $1000 base savings per client
-            savings = client_points * base_savings_per_client * multipliers[level]
-            max_savings = max(max_savings, max(savings))
-            
-            fig.add_trace(go.Scatter(
-                x=client_points,
-                y=savings,
-                name=level.capitalize(),
-                line=dict(color=engagement_colors[level])
-            ))
+        if "sme" in company_types:
+            for level, mult in multipliers.items():
+                savings = client_points * 188 * 0.7 * mult  # 30% lower for SMEs
+                plt.plot(client_points, savings, 
+                         label=f'SMEs - {level} (x{mult})',
+                         color=colors[level],
+                         linestyle=':' if level == engagement_level.capitalize() else '-.',
+                         linewidth=3 if level == engagement_level.capitalize() else 1)
+                if level == engagement_level.capitalize():
+                    plt.scatter(client_points, savings, color=colors[level], s=100)
         
-        # Calculate nice round numbers for y-axis ticks
-        magnitude = 10 ** (len(str(int(max_savings))) - 1)
-        max_y = math.ceil(max_savings / magnitude) * magnitude
-        y_ticks = np.linspace(0, max_y, 6)  # 6 evenly spaced ticks
+        plt.title('Projected Annual Savings Growth\n(Current vs Double Clients)', fontsize=14, pad=20)
+        plt.xlim(num_clients * 0.9, num_clients * 2.1)  # Set x-axis with some padding
+        plt.xlabel('Number of Clients', fontsize=12)
+        plt.ylabel('Annual Savings ($)', fontsize=12)
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='upper left', fontsize=10)
         
-        fig.update_layout(
-            title=f"Potential Savings Growth: {format_number(start_clients)} to {format_number(end_clients)} Clients",
-            xaxis_title="Number of Clients",
-            yaxis_title="Annual Savings ($)",
-            showlegend=True,
-            height=500,
-            yaxis=dict(
-                tickmode='array',
-                tickvals=y_ticks,
-                ticktext=[format_number(y) for y in y_ticks]
-            ),
-            xaxis=dict(
-                tickmode='array',
-                tickvals=np.linspace(start_clients, end_clients, 6),
-                ticktext=[format_number(x) for x in np.linspace(start_clients, end_clients, 6)]
-            )
-        )
+        # Format axes
+        ax = plt.gca()
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
-        st.plotly_chart(fig, use_container_width=True)
-
-# Historical Data Section
-st.header("Historical Bank Data")
+        # Show plot
+        st.pyplot(fig)
+        plt.close()
+        
+        # Historical Data Section
+        st.header("Historical Data")
+        
+        # Historical Trends
+        st.subheader("Monthly Savings Trends")
+        st.write("This plot shows the actual and projected monthly savings for both banks:")
+        st.image(str(static_dir / 'historical_trends.png'), use_container_width=True)
+        
+        # Bank Statistics
+        st.subheader("Current Statistics")
 
 # Get statistics
 stats = analyzer.get_all_stats()
@@ -284,17 +274,14 @@ with col2:
         st.markdown(f"   - Total Savings: {format_number(row['total_savings'])}")
         st.markdown(f"   - Median per Deal: {format_number(row['median_savings'])}")
 
-# Display visualizations
-st.header("Historical Visualizations")
-
-# Historical Savings Trends
-st.subheader("Historical Savings Trends")
-st.image(str(static_dir / 'historical_trends.png'), use_container_width=True)
-
 # Company Distribution
 st.subheader("Company Savings Distribution")
 st.image(str(static_dir / 'company_distribution.png'), use_container_width=True)
 
 # Savings vs Clients
 st.subheader("Projected Annual Savings by Number of Clients")
+st.write("This chart shows how annual savings scale with the number of clients at different engagement levels:")
+st.write("- **Frequently (x1.5)**: High engagement (JPM's level)")
+st.write("- **Often (x1.0)**: Medium engagement (SVB's level)")
+st.write("- **Rarely (x0.5)**: Low engagement")
 st.image(str(static_dir / 'savings_vs_clients.png'), use_container_width=True)
