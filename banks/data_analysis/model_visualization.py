@@ -171,39 +171,58 @@ class SavingsModelVisualizer:
             json.dump(predictions, f)
     
     def plot_historical_trends(self):
-        """Plot historical and projected savings trends"""
+        """Plot historical and projected savings trends with monthly medians"""
         plt.figure(figsize=(15, 7))
         
-        # Plot SVB actual trends
+        # Plot SVB data
         svb_monthly = self.aggregate_monthly_data(self.svb_data, 'SVB')
-        svb_data = svb_monthly.groupby('month')['sum'].sum()
-        svb_months = range(len(svb_data))
-        plt.plot(svb_months, svb_data,
-                label='SVB (Medium Engagement) - Actual', marker='o', color='blue')
+        svb_totals = svb_monthly.groupby('month')['sum'].sum()
+        svb_medians = svb_monthly.groupby(['month'])['sum'].median()
+        svb_months = range(len(svb_totals))
+        
+        # Plot SVB total and median trends
+        plt.plot(svb_months, svb_totals,
+                label='SVB Total Savings', marker='o', color='blue')
+        plt.plot(svb_months, svb_medians,
+                label='SVB Median Company Savings', marker='s', color='lightblue')
         
         # Plot JPM data
         jpm_monthly = self.aggregate_monthly_data(self.jpm_data, 'JPM')
-        jpm_data = jpm_monthly.groupby('month')['sum'].sum()
+        jpm_totals = jpm_monthly.groupby('month')['sum'].sum()
+        jpm_medians = jpm_monthly.groupby(['month'])['sum'].median()
         
         # Separate actual and projected data
         actual_months = (self.current_date.month - self.jpm_start_date.month + 1)
-        jpm_actual = jpm_data[:actual_months]
-        jpm_projected = jpm_data[actual_months-1:]
+        jpm_actual_totals = jpm_totals[:actual_months]
+        jpm_projected_totals = jpm_totals[actual_months-1:]
+        jpm_actual_medians = jpm_medians[:actual_months]
+        jpm_projected_medians = jpm_medians[actual_months-1:]
         
         # Plot actual JPM data
-        plt.plot(range(len(jpm_actual)), jpm_actual,
-                label='JPM (High Engagement) - Actual', marker='o', color='red')
+        plt.plot(range(len(jpm_actual_totals)), jpm_actual_totals,
+                label='JPM Total Savings', marker='o', color='red')
+        plt.plot(range(len(jpm_actual_medians)), jpm_actual_medians,
+                label='JPM Median Company Savings', marker='s', color='lightcoral')
         
         # Plot projected JPM data
-        projected_months = range(len(jpm_actual)-1, len(jpm_data))
-        plt.plot(projected_months, jpm_projected,
-                label='JPM (High Engagement) - Projected', linestyle='--', color='red')
+        projected_months = range(len(jpm_actual_totals)-1, len(jpm_totals))
+        plt.plot(projected_months, jpm_projected_totals,
+                label='JPM Total Savings (Projected)', linestyle='--', color='red')
+        plt.plot(projected_months, jpm_projected_medians,
+                label='JPM Median Company Savings (Projected)', linestyle='--', color='lightcoral')
         
-        # Add confidence interval for projections
-        lower_bound = jpm_projected * 0.8
-        upper_bound = jpm_projected * 1.2
-        plt.fill_between(projected_months, lower_bound, upper_bound,
-                        color='red', alpha=0.2, label='Projection Confidence Interval')
+        # Add confidence intervals for projections
+        # For total savings
+        lower_bound_total = jpm_projected_totals * 0.8
+        upper_bound_total = jpm_projected_totals * 1.2
+        plt.fill_between(projected_months, lower_bound_total, upper_bound_total,
+                        color='red', alpha=0.1, label='Total Savings Confidence Interval')
+        
+        # For median savings
+        lower_bound_median = jpm_projected_medians * 0.8
+        upper_bound_median = jpm_projected_medians * 1.2
+        plt.fill_between(projected_months, lower_bound_median, upper_bound_median,
+                        color='lightcoral', alpha=0.1, label='Median Savings Confidence Interval')
         
         plt.title('Bank Savings Trends (2024-2025)')
         plt.xlabel('Months Since Start')
