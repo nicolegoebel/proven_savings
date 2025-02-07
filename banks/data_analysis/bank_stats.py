@@ -214,16 +214,24 @@ class BankSavingsAnalyzer:
 
     def get_top_companies(self, bank='all', n=10):
         """Get top N companies by total savings for specified bank(s)"""
+        def get_company_stats(df):
+            # Group by company and calculate total and median savings
+            stats = df.groupby('company').agg({
+                'savings_amount': ['sum', 'median']
+            }).reset_index()
+            
+            # Flatten column names
+            stats.columns = ['company', 'total_savings', 'median_savings']
+            
+            # Sort by total savings and get top N
+            return stats.nlargest(n, 'total_savings')
+        
         if bank.upper() == 'JPM' or bank.upper() == 'ALL':
-            jpm_top = self.jpm_data.groupby('company')['savings_amount'].sum()\
-                .sort_values(ascending=False).head(n)\
-                .reset_index()
+            jpm_top = get_company_stats(self.jpm_data)
             jpm_top['bank'] = 'JPM'
         
         if bank.upper() == 'SVB' or bank.upper() == 'ALL':
-            svb_top = self.svb_data.groupby('company')['savings_amount'].sum()\
-                .sort_values(ascending=False).head(n)\
-                .reset_index()
+            svb_top = get_company_stats(self.svb_data)
             svb_top['bank'] = 'SVB'
         
         if bank.upper() == 'ALL':

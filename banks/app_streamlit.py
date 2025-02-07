@@ -239,7 +239,9 @@ with col1:
     st.subheader("Top 10 Companies by Savings")
     top_jpm = analyzer.get_top_companies(bank='JPM', n=10)
     for idx, row in top_jpm.iterrows():
-        st.markdown(f"{idx + 1}. {row['company']}: {format_number(row['savings_amount'])}")
+        st.markdown(f"{idx + 1}. **{row['company']}**")
+        st.markdown(f"   - Total Savings: {format_number(row['total_savings'])}")
+        st.markdown(f"   - Median per Deal: {format_number(row['median_savings'])}")
 
 # SVB Statistics
 with col2:
@@ -256,7 +258,9 @@ with col2:
     st.subheader("Top 10 Companies by Savings")
     top_svb = analyzer.get_top_companies(bank='SVB', n=10)
     for idx, row in top_svb.iterrows():
-        st.markdown(f"{idx + 1}. {row['company']}: {format_number(row['savings_amount'])}")
+        st.markdown(f"{idx + 1}. **{row['company']}**")
+        st.markdown(f"   - Total Savings: {format_number(row['total_savings'])}")
+        st.markdown(f"   - Median per Deal: {format_number(row['median_savings'])}")
 
 # Display visualizations
 st.header("Historical Visualizations")
