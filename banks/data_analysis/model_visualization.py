@@ -152,44 +152,46 @@ class SavingsModelVisualizer:
         return model, poly, min_savings
     
     def generate_prediction_surface(self):
-        """Generate prediction surface for visualization with smoothing"""
+        """Generate prediction surface for visualization with linear interpolation below 200"""
         model, poly, min_savings = self.train_model()
         
-        # Create grid of values including points below 200 for linear interpolation
-        num_companies = np.concatenate([
-            np.linspace(0, 200, 10),     # Linear range to zero
-            np.linspace(200, 1000, 20),  # More points in lower range
+        # Create separate arrays for different ranges
+        companies_below_200 = np.linspace(0, 200, 20)  # More points for smooth linear section
+        companies_main = np.concatenate([
+            np.linspace(200, 1000, 20),   # More points in lower range
             np.linspace(1000, 2000000, 30)  # Fewer points in higher range
         ])
+        
         engagement_levels = np.array([0, 1, 2])  # rarely, often, frequently
+        engagement_names = ['rarely', 'often', 'frequently']
         
         predictions = {}
         for level in engagement_levels:
-            # Get prediction for 200 clients to use as reference
+            # Get prediction at 200 clients as reference point
             X_ref = np.array([[200, level]])
             X_ref_poly = poly.transform(X_ref)
-            pred_at_200 = model.predict(X_ref_poly)[0]
+            pred_at_200 = float(model.predict(X_ref_poly)[0])  # Ensure it's a float
             
-            # Generate predictions for all points
-            X_pred = np.column_stack([num_companies, np.full_like(num_companies, level)])
-            X_poly = poly.transform(X_pred)
-            pred = model.predict(X_poly)
+            # Calculate predictions for main range (200 and above)
+            X_main = np.column_stack([companies_main, np.full_like(companies_main, level)])
+            X_main_poly = poly.transform(X_main)
+            pred_main = model.predict(X_main_poly)
             
-            # Create linear interpolation for values below 200
-            below_200_mask = num_companies <= 200
-            if np.any(below_200_mask):
-                # Calculate linear slope from 0 to pred_at_200
-                slope = pred_at_200 / 200
-                pred[below_200_mask] = num_companies[below_200_mask] * slope
+            # Ensure minimum threshold for predictions above 200
+            pred_main = np.maximum(pred_main, min_savings)
             
-            # Apply smoothing for values above 200
-            above_200_mask = num_companies > 200
-            if np.any(above_200_mask):
-                pred[above_200_mask] = np.maximum(pred[above_200_mask], min_savings)
+            # Linear interpolation from 0 to 200
+            slope = pred_at_200 / 200.0  # Calculate slope for linear section
+            pred_below_200 = slope * companies_below_200  # Linear interpolation
             
-            predictions[['rarely', 'often', 'frequently'][int(level)]] = {
-                'companies': num_companies.tolist(),
-                'savings': pred.tolist()
+            # Combine arrays
+            all_companies = np.concatenate([companies_below_200, companies_main])
+            all_predictions = np.concatenate([pred_below_200, pred_main])
+            
+            # Store results
+            predictions[engagement_names[int(level)]] = {
+                'companies': all_companies.tolist(),
+                'savings': all_predictions.tolist()
             }
         
         # Save predictions for JavaScript visualization
