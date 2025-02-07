@@ -170,24 +170,14 @@ if predict_button:
         # Engagement Comparison Chart
         st.header("Startup Savings by Engagement Level")
         
-        # Set fixed range for x-axis starting at 200
-        min_clients = 200
-        x_range = np.linspace(min_clients, num_clients, 10)
+        # Generate points starting at 200
+        num_points = 10
+        client_points = np.linspace(200, num_clients, num_points)
         
-        # Create figure with fixed ranges
-        fig = go.Figure(layout=go.Layout(
-            xaxis=dict(
-                range=[min_clients, num_clients],  # Force start at 200
-                autorange=False
-            ),
-            yaxis=dict(
-                rangemode='nonnegative',  # Force start at 0
-                autorange=True
-            )
-        ))
+        # Create traces for each engagement level
+        fig = go.Figure()
         
-        # Add traces for each engagement level
-        colors = {
+        engagement_colors = {
             'frequently': '#4BC0C0',
             'often': '#FF9F40',
             'rarely': '#FF6384'
@@ -196,21 +186,20 @@ if predict_button:
         for level in ['frequently', 'often', 'rarely']:
             savings = [
                 analyzer.predict_annual_savings(
-                    num_clients=int(x),
+                    num_clients=int(clients),
                     company_types=['startup'],
                     engagement_level=level
                 )['total_annual_savings']
-                for x in x_range
+                for clients in client_points
             ]
             
             fig.add_trace(go.Scatter(
-                x=x_range,
+                x=client_points,
                 y=savings,
                 name=level.capitalize(),
-                line=dict(color=colors[level])
+                line=dict(color=engagement_colors[level])
             ))
         
-        # Update layout with fixed formatting
         fig.update_layout(
             title="Startup Savings by Engagement Level (200+ clients)",
             xaxis_title="Number of Clients",
@@ -219,15 +208,11 @@ if predict_button:
             height=500
         )
         
-        # Force axis formatting
-        fig.update_xaxes(
-            tickformat=',d',  # Add commas to numbers
-            dtick=(num_clients - min_clients) / 5  # Show 5 ticks
-        )
-        
+        # Update axis labels to use formatted numbers
+        fig.update_xaxes(tickformat=",d")
         fig.update_yaxes(
-            tickprefix='$',  # Add dollar sign
-            tickformat=',d'  # Add commas to numbers
+            ticktext=[format_number(x) for x in fig.data[0].y],
+            tickvals=fig.data[0].y
         )
         
         st.plotly_chart(fig, use_container_width=True)
