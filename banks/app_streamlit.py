@@ -234,7 +234,11 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Historical Savings Trends")
-    st.image("static/historical_trends.png")
+    # Get the directory containing the current script
+    script_dir = Path(__file__).parent
+    # Construct the absolute path to the image
+    image_path = script_dir / "static" / "historical_trends.png"
+    st.image(str(image_path))
 
 with col2:
     st.subheader("Company Savings Distribution")
