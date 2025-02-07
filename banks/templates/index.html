@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Potential Bank Savings with Proven</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .slider-container {
+            margin: 20px 0;
+        }
+        .prediction-results {
+            margin-top: 30px;
+        }
+        #relationshipChart {
+            height: 400px !important;
+            aspect-ratio: 16/9;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Potential Bank Savings with Proven</h1>
+        
+
+
+        <!-- Prediction Form -->
+        <div class="card">
+            <div class="card-body">
+                <h2>Predict Annual Savings</h2>
+                <form id="predictionForm">
+                    <!-- Number of Clients Slider -->
+                    <div class="slider-container">
+                        <label for="numClients">Number of Clients: <span id="clientValue">10000</span></label>
+                        <input type="range" class="form-range" id="numClients" 
+                               min="10000" max="3000000" step="10000" value="10000">
+                    </div>
+
+                    <!-- Company Types -->
+                    <div class="mb-3">
+                        <h5>Company Types:</h5>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="startupCheckbox" checked>
+                            <label class="form-check-label" for="startupCheckbox">Startups</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="smeCheckbox">
+                            <label class="form-check-label" for="smeCheckbox">SMEs</label>
+                        </div>
+                    </div>
+
+                    <!-- Engagement Level -->
+                    <div class="mb-3">
+                        <h5>Engagement Level:</h5>
+                        <select class="form-select" id="engagementLevel">
+                            <option value="rarely">Rarely</option>
+                            <option value="often">Often</option>
+                            <option value="frequently">Frequently</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Predict</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Prediction Results -->
+        <div class="prediction-results" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Potential Savings</h3>
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <td>Total Annual Savings</td>
+                                        <td id="totalAnnualSavings" class="text-end">$0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Annual Savings per Company</td>
+                                        <td id="annualSavingsPerCompany" class="text-end">$0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Average Monthly Savings</td>
+                                        <td id="monthlySavings" class="text-end">$0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Monthly Savings per Company</td>
+                                        <td id="monthlySavingsPerCompany" class="text-end">$0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Savings vs Clients</h3>
+                            <canvas id="relationshipChart"></canvas>
+                            <div class="mt-4" id="insights">
+                                <h4>Key Insights</h4>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item" id="startupInsight"></li>
+                                    <li class="list-group-item" id="smeInsight"></li>
+                                    <li class="list-group-item" id="bothInsight"></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Top 10 Potential Deals</h3>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Deal Name</th>
+                                            <th class="text-end">Potential Savings</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topOffers">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Engagement Comparison Chart -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>Startup Savings by Engagement Level</h4>
+                        <canvas id="engagementComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Insights -->
+        <div class="row mt-4">
+            <h3>Model Insights</h3>
+            
+            <!-- Historical Data -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>Historical Bank Data</h4>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h5>JPM Statistics</h5>
+                                <ul class="list-group">
+                                    <li class="list-group-item">Total Savings: ${{ "%.2f"|format(stats.JPM.total_savings) }}</li>
+                                    <li class="list-group-item">Avg per Redemption: ${{ "%.2f"|format(stats.JPM.avg_savings_per_redemption) }}</li>
+                                    <li class="list-group-item">Unique Companies: {{ stats.JPM.unique_companies }}</li>
+                                    <li class="list-group-item">Total Deal Redemptions: {{ stats.JPM.total_redemptions }}</li>
+                                    <li class="list-group-item">Avg Redemptions per Company: {{ "%.1f"|format(stats.JPM.avg_redemptions_per_company) }}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>SVB Statistics</h5>
+                                <ul class="list-group">
+                                    <li class="list-group-item">Total Savings: ${{ "%.2f"|format(stats.SVB.total_savings) }}</li>
+                                    <li class="list-group-item">Avg per Redemption: ${{ "%.2f"|format(stats.SVB.avg_savings_per_redemption) }}</li>
+                                    <li class="list-group-item">Unique Companies: {{ stats.SVB.unique_companies }}</li>
+                                    <li class="list-group-item">Total Deal Redemptions: {{ stats.SVB.total_redemptions }}</li>
+                                    <li class="list-group-item">Avg Redemptions per Company: {{ "%.1f"|format(stats.SVB.avg_redemptions_per_company) }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizations -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>Historical Savings Trends</h4>
+                        <img src="/static/historical_trends.png" class="img-fluid" alt="Historical Trends">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>Company Savings Distribution</h4>
+                        <img src="/static/company_distribution.png" class="img-fluid" alt="Company Distribution">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Format large numbers with appropriate suffix
+        function formatLargeNumber(number) {
+            if (number >= 1e12) {
+                return `$${(number / 1e12).toFixed(1)}T`;
+            } else if (number >= 1e9) {
+                return `$${(number / 1e9).toFixed(1)}B`;
+            } else if (number >= 1e6) {
+                return `$${(number / 1e6).toFixed(1)}M`;
+            } else {
+                return `$${Math.round(number).toLocaleString()}`;
+            }
+        }
+        
+        // Initialize charts
+        let relationshipChart = null;
+        let engagementComparisonChart = null;
+        
+        function calculateSavings(clients, type, engagement) {
+            const baseMultiplier = 1000;
+            const engagementMultipliers = {
+                frequently: 1.5,
+                often: 1.0,
+                rarely: 0.5
+            };
+            
+            let typeMultiplier = 1;
+            if (type === 'sme') typeMultiplier = 0.7;
+            else if (type === 'both') typeMultiplier = 0.85;
+            
+            const result = clients * baseMultiplier * engagementMultipliers[engagement] * typeMultiplier;
+            return isNaN(result) ? 0 : result;
+        }
+
+        function formatGrowthRate(base, doubled) {
+            if (!base || !doubled || base === 0) return '100.0';
+            const growthRate = ((doubled / base) - 1) * 100;
+            return isNaN(growthRate) ? '100.0' : growthRate.toFixed(1);
+        }
+
+        function updateEngagementComparisonChart(numClients) {
+            // Generate points from 0 to numClients
+            const numPoints = 10;
+            const clientPoints = Array.from({length: numPoints}, (_, i) => numClients * (i + 1) / numPoints);
+            
+            // Calculate savings for each engagement level
+            const datasets = [
+                {
+                    label: 'Frequently',
+                    data: clientPoints.map(clients => calculateSavings(clients, 'startup', 'frequently')),
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false
+                },
+                {
+                    label: 'Often',
+                    data: clientPoints.map(clients => calculateSavings(clients, 'startup', 'often')),
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    fill: false
+                },
+                {
+                    label: 'Rarely',
+                    data: clientPoints.map(clients => calculateSavings(clients, 'startup', 'rarely')),
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    fill: false
+                }
+            ];
+            
+            if (engagementComparisonChart) {
+                engagementComparisonChart.destroy();
+            }
+            
+            engagementComparisonChart = new Chart(
+                document.getElementById('engagementComparisonChart'),
+                {
+                    type: 'line',
+                    data: {
+                        labels: clientPoints.map(num => formatLargeNumber(num)),
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 16/9,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Annual Savings ($)',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold',
+                                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                    }
+                                },
+                                ticks: {
+                                    callback: value => formatLargeNumber(value)
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Number of Clients',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold',
+                                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${formatLargeNumber(context.parsed.y)}`;
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Startup Savings by Engagement Level',
+                                font: {
+                                    size: 16
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        function updateRelationshipChart(numClients) {
+            const clientPoints = [numClients * 0.5, numClients, numClients * 2];
+            const baseMultiplier = 1000;
+            
+            // Get selected company types
+            const selectedTypes = [];
+            if (document.getElementById('startupCheckbox').checked) selectedTypes.push('startup');
+            if (document.getElementById('smeCheckbox').checked) selectedTypes.push('sme');
+            if (selectedTypes.length === 2) selectedTypes.push('both');
+            
+            // Define colors for each type
+            const colors = {
+                startup: {
+                    frequently: 'rgba(75, 192, 192, 1)',
+                    often: 'rgba(75, 192, 192, 0.6)',
+                    rarely: 'rgba(75, 192, 192, 0.3)'
+                },
+                sme: {
+                    frequently: 'rgba(255, 99, 132, 1)',
+                    often: 'rgba(255, 99, 132, 0.6)',
+                    rarely: 'rgba(255, 99, 132, 0.3)'
+                },
+                both: {
+                    frequently: 'rgba(153, 102, 255, 1)',
+                    often: 'rgba(153, 102, 255, 0.6)',
+                    rarely: 'rgba(153, 102, 255, 0.3)'
+                }
+            };
+            
+            // Define multipliers for each engagement level
+            const engagementMultipliers = {
+                frequently: 1.5,
+                often: 1.0,
+                rarely: 0.5
+            };
+            
+            const datasets = [];
+            
+            // Generate one dataset per engagement level
+            Object.entries(engagementMultipliers).forEach(([engagement, multiplier]) => {
+                const data = clientPoints.map(clients => {
+                    let total = 0;
+                    selectedTypes.forEach(type => {
+                        let typeMultiplier = 1;
+                        if (type === 'sme') typeMultiplier = 0.7;
+                        else if (type === 'both') typeMultiplier = 0.85;
+                        total += clients * baseMultiplier * multiplier * typeMultiplier;
+                    });
+                    return total;
+                });
+
+                datasets.push({
+                    label: engagement.charAt(0).toUpperCase() + engagement.slice(1),
+                    data: data,
+                    borderColor: colors.startup[engagement], // Using startup colors for consistency
+                    fill: false
+                });
+            });
+            
+            if (relationshipChart) {
+                relationshipChart.destroy();
+            }
+
+            // Calculate insights for selected types only
+            const baseClients = numClients;
+            const doubledClients = numClients * 2;
+            
+            document.getElementById('startupInsight').style.display = 'none';
+            document.getElementById('smeInsight').style.display = 'none';
+            document.getElementById('bothInsight').style.display = 'none';
+            
+            // Get the selected engagement level
+            const selectedEngagement = document.getElementById('engagementLevel').value;
+            
+            if (document.getElementById('startupCheckbox').checked) {
+                const startupBase = calculateSavings(baseClients, 'startup', selectedEngagement);
+                const startupDoubled = calculateSavings(doubledClients, 'startup', selectedEngagement);
+                document.getElementById('startupInsight').style.display = 'block';
+                document.getElementById('startupInsight').innerHTML = `
+                    <strong>Startups:</strong> For every doubling of clients, savings increase by ${formatGrowthRate(startupBase, startupDoubled)}%. 
+                    At ${formatLargeNumber(baseClients)} clients, expect ${formatLargeNumber(startupBase)} in annual savings.
+                `;
+            }
+            
+            if (document.getElementById('smeCheckbox').checked) {
+                const smeBase = calculateSavings(baseClients, 'sme', selectedEngagement);
+                const smeDoubled = calculateSavings(doubledClients, 'sme', selectedEngagement);
+                document.getElementById('smeInsight').style.display = 'block';
+                document.getElementById('smeInsight').innerHTML = `
+                    <strong>SMEs:</strong> For every doubling of clients, savings increase by ${formatGrowthRate(smeBase, smeDoubled)}%. 
+                    At ${formatLargeNumber(baseClients)} clients, expect ${formatLargeNumber(smeBase)} in annual savings.
+                `;
+            }
+            
+            if (document.getElementById('startupCheckbox').checked && document.getElementById('smeCheckbox').checked) {
+                const bothBase = calculateSavings(baseClients, 'both', selectedEngagement);
+                const bothDoubled = calculateSavings(doubledClients, 'both', selectedEngagement);
+                document.getElementById('bothInsight').style.display = 'block';
+                document.getElementById('bothInsight').innerHTML = `
+                    <strong>Mixed Portfolio:</strong> For every doubling of clients, savings increase by ${formatGrowthRate(bothBase, bothDoubled)}%. 
+                    At ${formatLargeNumber(baseClients)} clients, expect ${formatLargeNumber(bothBase)} in annual savings.
+                `;
+            }
+            
+            relationshipChart = new Chart(
+                document.getElementById('relationshipChart'),
+                {
+                    type: 'line',
+                    data: {
+                        labels: clientPoints.map(num => num.toLocaleString()),
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 16/9,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Annual Savings ($)',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold',
+                                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                    }
+                                },
+                                ticks: {
+                                    callback: value => formatLargeNumber(value)
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Number of Clients',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold',
+                                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${formatLargeNumber(context.parsed.y)}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        // Update slider value display
+        // Update on slider change
+        document.getElementById('numClients').addEventListener('input', function(e) {
+            const numClients = parseInt(e.target.value);
+            document.getElementById('clientValue').textContent = new Intl.NumberFormat().format(numClients);
+            updateRelationshipChart(numClients);
+            updateEngagementComparisonChart(numClients);
+        });
+
+        // Update on checkbox change
+        document.getElementById('startupCheckbox').addEventListener('change', function() {
+            updateRelationshipChart(parseInt(document.getElementById('numClients').value));
+        });
+        document.getElementById('smeCheckbox').addEventListener('change', function() {
+            updateRelationshipChart(parseInt(document.getElementById('numClients').value));
+        });
+
+        // Handle form submission
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form values
+            const numClients = document.getElementById('numClients').value;
+            const startups = document.getElementById('startupCheckbox').checked;
+            const smes = document.getElementById('smeCheckbox').checked;
+            const engagementLevel = document.getElementById('engagementLevel').value;
+            
+            // Prepare company types array
+            const companyTypes = [];
+            if (startups) companyTypes.push('startup');
+            if (smes) companyTypes.push('sme');
+            
+            console.log('Submitting form with:', {
+                num_clients: parseInt(numClients),
+                company_types: companyTypes,
+                engagement_level: engagementLevel
+            });
+            
+            // Make prediction request
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    num_clients: parseInt(numClients),
+                    company_types: companyTypes,
+                    engagement_level: engagementLevel
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received data:', data);
+                
+                // Show results section
+                document.querySelector('.prediction-results').style.display = 'block';
+                
+                // Update the charts
+                const numClients = parseInt(document.getElementById('numClients').value);
+                updateRelationshipChart(numClients);
+                updateEngagementComparisonChart(numClients);
+                
+                try {
+                    // Update savings values
+                    document.getElementById('totalAnnualSavings').textContent = 
+                        formatLargeNumber(data.annual_savings.total_annual_savings);
+                    document.getElementById('annualSavingsPerCompany').textContent = 
+                        formatLargeNumber(data.annual_savings.avg_savings_per_company);
+                    document.getElementById('monthlySavings').textContent = 
+                        formatLargeNumber(data.annual_savings.total_annual_savings / 12);
+                    document.getElementById('monthlySavingsPerCompany').textContent = 
+                        formatLargeNumber(data.annual_savings.avg_savings_per_company / 12);
+                } catch (error) {
+                    console.error('Error updating savings values:', error);
+                    console.log('Data structure:', data);
+                }
+                
+                try {
+                    // Update top offers
+                    const topOffers = document.getElementById('topOffers');
+                    if (data.top_offers && Array.isArray(data.top_offers)) {
+                        topOffers.innerHTML = data.top_offers.map(offer => `
+                            <tr>
+                                <td>${offer.offer_name || 'N/A'}</td>
+                                <td class="text-end">${formatLargeNumber(offer.avg_savings || 0)}</td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        console.error('No top offers data or invalid format:', data.top_offers);
+                        topOffers.innerHTML = '<tr><td colspan="4" class="text-center">No offers data available</td></tr>';
+                    }
+                } catch (error) {
+                    console.error('Error updating top offers:', error);
+                    console.log('Top offers data:', data.top_offers);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error making prediction. Please try again.');
+            });
+        });
+    </script>
+</body>
+</html>
