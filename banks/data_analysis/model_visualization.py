@@ -141,19 +141,23 @@ class SavingsModelVisualizer:
         # Add a minimum threshold for predictions
         min_savings = data['sum'].min() * 0.5  # Set minimum to half of smallest observed value
         
-        # Fit linear model with sample weights
-        model = LinearRegression()
-        model.fit(X, y, sample_weight=sample_weights)
+        # Create polynomial features with higher degree for better fit
+        poly = PolynomialFeatures(degree=3)
+        X_poly = poly.fit_transform(X)
         
-        return model, min_savings
+        # Fit model with sample weights
+        model = LinearRegression()
+        model.fit(X_poly, y, sample_weight=sample_weights)
+        
+        return model, poly, min_savings
     
     def generate_prediction_surface(self):
         """Generate prediction surface for visualization with monotonic savings"""
-        model, min_savings = self.train_model()
+        model, poly, min_savings = self.train_model()
         
         # Create evenly spaced grid for number of companies
         num_points = 50  # Number of points to generate
-        companies = np.linspace(200, 2000000, num_points)
+        companies = np.linspace(0, 2000000, num_points)
         
         engagement_levels = np.array([0, 1, 2])  # rarely, often, frequently
         engagement_names = ['rarely', 'often', 'frequently']
@@ -164,7 +168,8 @@ class SavingsModelVisualizer:
         for level in engagement_levels:
             # Generate predictions
             X = np.column_stack([companies, np.full_like(companies, level)])
-            pred = model.predict(X)
+            X_poly = poly.transform(X)
+            pred = model.predict(X_poly)
             
             # Ensure predictions are monotonically increasing
             for i in range(1, len(pred)):

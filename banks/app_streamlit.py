@@ -187,28 +187,18 @@ if predict_button:
         st.header("Savings vs Number of Clients")
         fig_savings = go.Figure()
         
-        # Generate points from 200 to num_clients
-        client_points = np.linspace(200, num_clients, 50)
+        # Generate points from 0 to num_clients
+        client_points = np.linspace(0, num_clients, 50)
         
-        # Calculate base savings per client
-        base_per_client = 1000  # $1000 per client base
-        
-        # Adjust for engagement level
-        engagement_multiplier = 1.5 if engagement_level == "frequently" else 1.0 if engagement_level == "often" else 0.5
-        
-        # Adjust for company types
+        # Calculate savings for each point
         savings_points = []
         for clients in client_points:
-            total = 0
-            if "startup" in company_types:
-                startup_savings = clients * base_per_client * engagement_multiplier
-                total += startup_savings
-            if "sme" in company_types:
-                sme_savings = clients * base_per_client * 0.7 * engagement_multiplier  # SMEs save 70% of startup amount
-                total += sme_savings
-            if len(company_types) == 2:
-                total /= 2  # Average for mixed portfolio
-            savings_points.append(total)
+            pred = analyzer.predict_annual_savings(
+                num_clients=int(clients),
+                company_types=company_types,
+                engagement_level=engagement_level
+            )
+            savings_points.append(pred['total_annual_savings'])
         
         # Add trace
         fig_savings.add_trace(go.Scatter(
