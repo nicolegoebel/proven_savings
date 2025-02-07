@@ -211,3 +211,26 @@ class BankSavingsAnalyzer:
             top_offers['percentage'] = (100.0 / len(top_offers)).round(2)
         
         return top_offers
+
+    def get_top_companies(self, bank='all', n=10):
+        """Get top N companies by total savings for specified bank(s)"""
+        if bank.upper() == 'JPM' or bank.upper() == 'ALL':
+            jpm_top = self.jpm_data.groupby('company')['savings_amount'].sum()\
+                .sort_values(ascending=False).head(n)\
+                .reset_index()
+            jpm_top['bank'] = 'JPM'
+        
+        if bank.upper() == 'SVB' or bank.upper() == 'ALL':
+            svb_top = self.svb_data.groupby('company')['savings_amount'].sum()\
+                .sort_values(ascending=False).head(n)\
+                .reset_index()
+            svb_top['bank'] = 'SVB'
+        
+        if bank.upper() == 'ALL':
+            return pd.concat([jpm_top, svb_top])
+        elif bank.upper() == 'JPM':
+            return jpm_top
+        elif bank.upper() == 'SVB':
+            return svb_top
+        else:
+            raise ValueError("bank must be 'JPM', 'SVB', or 'all'")

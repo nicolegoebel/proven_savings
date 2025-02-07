@@ -229,6 +229,12 @@ with col1:
     * Total Deal Redemptions: {stats['JPM']['total_redemptions']:,}
     * Avg Redemptions per Company: {stats['JPM']['avg_redemptions_per_company']:.1f}
     """)
+    
+    # Display top 10 companies for JPM
+    st.subheader("Top 10 Companies by Savings")
+    top_jpm = analyzer.get_top_companies(bank='JPM', n=10)
+    for idx, row in top_jpm.iterrows():
+        st.markdown(f"{idx + 1}. {row['company']}: {format_number(row['savings_amount'])}")
 
 # SVB Statistics
 with col2:
@@ -240,6 +246,12 @@ with col2:
     * Total Deal Redemptions: {stats['SVB']['total_redemptions']:,}
     * Avg Redemptions per Company: {stats['SVB']['avg_redemptions_per_company']:.1f}
     """)
+    
+    # Display top 10 companies for SVB
+    st.subheader("Top 10 Companies by Savings")
+    top_svb = analyzer.get_top_companies(bank='SVB', n=10)
+    for idx, row in top_svb.iterrows():
+        st.markdown(f"{idx + 1}. {row['company']}: {format_number(row['savings_amount'])}")
 
 # Display visualizations
 st.header("Historical Visualizations")
