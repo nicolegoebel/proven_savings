@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=69.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,13 +9,13 @@ authors = [
     { name="Nicole Goebel", email="nicolegoebel@gmail.com" },
 ]
 description = "Bank savings prediction app"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 dependencies = [
     "streamlit>=1.40.2",
-    "pandas",
-    "numpy",
-    "plotly",
-    "matplotlib",
-    "scikit-learn",
-    "setuptools",
+    "pandas>=2.2.0",
+    "numpy>=1.26.0",
+    "plotly>=5.18.0",
+    "matplotlib>=3.8.0",
+    "scikit-learn>=1.4.0",
+    "setuptools>=69.0.0",
 ]
