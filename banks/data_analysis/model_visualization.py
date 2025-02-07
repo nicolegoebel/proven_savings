@@ -130,7 +130,7 @@ class SavingsModelVisualizer:
         return df
     
     def train_model(self):
-        """Train a polynomial regression model with confidence weights"""
+        """Train a polynomial regression model with confidence weights and smoothing"""
         data = self.prepare_training_data()
         
         # Create feature matrix
@@ -138,22 +138,29 @@ class SavingsModelVisualizer:
         y = data['sum']
         sample_weights = data['confidence']  # Use confidence as sample weights
         
-        # Create polynomial features
-        poly = PolynomialFeatures(degree=2)
+        # Add a minimum threshold for predictions
+        min_savings = data['sum'].min() * 0.5  # Set minimum to half of smallest observed value
+        
+        # Create polynomial features with higher degree for better fit
+        poly = PolynomialFeatures(degree=3)
         X_poly = poly.fit_transform(X)
         
         # Fit model with sample weights
         model = LinearRegression()
         model.fit(X_poly, y, sample_weight=sample_weights)
         
-        return model, poly
+        return model, poly, min_savings
     
     def generate_prediction_surface(self):
-        """Generate prediction surface for visualization"""
-        model, poly = self.train_model()
+        """Generate prediction surface for visualization with smoothing"""
+        model, poly, min_savings = self.train_model()
         
-        # Create grid of values
-        num_companies = np.linspace(10, 3000, 50)
+        # Create grid of values with focus on lower range
+        # Use logarithmic spacing for better resolution at lower values
+        num_companies = np.concatenate([
+            np.linspace(200, 1000, 20),  # More points in lower range
+            np.linspace(1000, 2000000, 30)  # Fewer points in higher range
+        ])
         engagement_levels = np.array([0, 1, 2])  # rarely, often, frequently
         
         predictions = {}
@@ -161,6 +168,17 @@ class SavingsModelVisualizer:
             X_pred = np.column_stack([num_companies, np.full_like(num_companies, level)])
             X_poly = poly.transform(X_pred)
             pred = model.predict(X_poly)
+            
+            # Apply smoothing and minimum threshold
+            pred = np.maximum(pred, min_savings)  # Ensure minimum savings
+            
+            # Apply additional smoothing for very low client numbers
+            low_range_mask = num_companies < 1000
+            if np.any(low_range_mask):
+                # Smooth transition for low client numbers
+                smoothing_factor = np.clip(num_companies[low_range_mask] / 1000, 0.1, 1)
+                pred[low_range_mask] *= smoothing_factor
+            
             predictions[['rarely', 'often', 'frequently'][int(level)]] = {
                 'companies': num_companies.tolist(),
                 'savings': pred.tolist()
