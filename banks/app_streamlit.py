@@ -235,10 +235,6 @@ if predict_button:
 # Historical Data Section
 st.header("Historical Bank Data")
 
-# Display historical trends
-st.subheader('Historical Savings Trends')
-st.image(str(data_dir.parent / 'static' / 'historical_trends.png'), use_column_width=True)
-
 # Get statistics
 stats = analyzer.get_all_stats()
 
@@ -286,15 +282,10 @@ with col2:
 # Display visualizations
 st.header("Historical Visualizations")
 
-# Get the directory containing the current script
-script_dir = Path(__file__).parent
-
 # Historical Savings Trends
 st.subheader("Historical Savings Trends")
-image_path = script_dir / "static" / "historical_trends.png"
-st.image(str(image_path))
+st.image(str(data_dir.parent / 'static' / 'historical_trends.png'), use_container_width=True)
 
 # Company Distribution
 st.subheader("Company Savings Distribution")
-image_path = script_dir / "static" / "company_distribution.png"
-st.image(str(image_path))
+st.image(str(data_dir.parent / 'static' / 'company_distribution.png'), use_container_width=True)
