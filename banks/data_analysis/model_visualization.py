@@ -164,6 +164,11 @@ class SavingsModelVisualizer:
         engagement_levels = np.array([0, 1, 2])  # rarely, often, frequently
         
         predictions = {}
+        
+        # Create static plot
+        plt.figure(figsize=(12, 6))
+        colors = {'frequently': '#4BC0C0', 'often': '#FF9F40', 'rarely': '#FF6384'}
+        
         for level in engagement_levels:
             X_pred = np.column_stack([num_companies, np.full_like(num_companies, level)])
             X_poly = poly.transform(X_pred)
@@ -179,10 +184,29 @@ class SavingsModelVisualizer:
                 smoothing_factor = np.clip(num_companies[low_range_mask] / 1000, 0.1, 1)
                 pred[low_range_mask] *= smoothing_factor
             
-            predictions[['rarely', 'often', 'frequently'][int(level)]] = {
+            level_name = ['rarely', 'often', 'frequently'][int(level)]
+            predictions[level_name] = {
                 'companies': num_companies.tolist(),
                 'savings': pred.tolist()
             }
+            
+            # Add to static plot
+            plt.plot(num_companies, pred, label=level_name.capitalize(),
+                     color=colors[level_name])
+        
+        plt.title('Projected Annual Savings by Number of Clients')
+        plt.xlabel('Number of Clients')
+        plt.ylabel('Annual Savings ($)')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        
+        # Format axes
+        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${format(int(x), ',')}'))
+        
+        # Save static plot
+        plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300)
+        plt.close()
         
         # Save predictions for JavaScript visualization
         with open(self.static_dir / 'prediction_data.json', 'w') as f:

@@ -289,3 +289,7 @@ st.image(str(data_dir.parent / 'static' / 'historical_trends.png'), use_containe
 # Company Distribution
 st.subheader("Company Savings Distribution")
 st.image(str(data_dir.parent / 'static' / 'company_distribution.png'), use_container_width=True)
+
+# Savings vs Clients
+st.subheader("Projected Annual Savings by Number of Clients")
+st.image(str(data_dir.parent / 'static' / 'savings_vs_clients.png'), use_container_width=True)
