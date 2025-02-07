@@ -40,15 +40,31 @@ st.title("Potential Bank Savings with Proven")
 with st.sidebar:
     st.header("Prediction Parameters")
     
-    # Number of Clients slider
-    num_clients = st.slider(
-        "Number of Clients",
-        min_value=200,
-        max_value=2000000,
-        value=200,
-        step=200,
-        format="%d"
+    # Client range selector
+    range_option = st.radio(
+        "Select Range",
+        options=["Small (200-5,000)", "Large (5,000-2,000,000)"]
     )
+    
+    # Number of Clients slider based on selected range
+    if range_option == "Small (200-5,000)":
+        num_clients = st.slider(
+            "Number of Clients",
+            min_value=200,
+            max_value=5000,
+            value=200,
+            step=200,
+            format="%d"
+        )
+    else:
+        num_clients = st.slider(
+            "Number of Clients",
+            min_value=5000,
+            max_value=2000000,
+            value=5000,
+            step=5000,
+            format="%d"
+        )
     
     # Company Types
     st.subheader("Company Types")
