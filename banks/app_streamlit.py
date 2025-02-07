@@ -256,4 +256,6 @@ with col1:
 
 with col2:
     st.subheader("Company Savings Distribution")
-    st.image("static/company_distribution.png")
+    # Construct the absolute path to the image
+    image_path = script_dir / "static" / "company_distribution.png"
+    st.image(str(image_path))
