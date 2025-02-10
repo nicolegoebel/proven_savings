@@ -254,7 +254,7 @@ class SavingsModelVisualizer:
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
         plt.tight_layout()
-        plt.savefig(self.static_dir / 'historical_trends.png', bbox_inches='tight', dpi=300)
+        plt.savefig(self.static_dir / 'historical_trends.png', bbox_inches='tight', dpi=300, format='png', facecolor='white')
         plt.close()
     
     def plot_company_distribution(self):
