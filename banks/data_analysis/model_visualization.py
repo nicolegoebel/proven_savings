@@ -54,51 +54,77 @@ class SavingsModelVisualizer:
 
     
     def generate_prediction_surface(self):
-        """Generate prediction surface with linear growth"""
-        # Create grid of values with focus on lower range
-        num_companies = np.concatenate([
-            np.linspace(200, 1000, 20),  # More points in lower range
-            np.linspace(1000, 2000000, 30)  # Fewer points in higher range
-        ])
+        """Generate prediction surface with linear growth based on SVB and JPM data"""
+        # SVB benchmark (medium engagement): 7.7M annual savings with 41k clients
+        svb_benchmark_clients = 41000
+        svb_benchmark_savings = 7.7e6  # 7.7 million
+        base_savings_per_client = svb_benchmark_savings / svb_benchmark_clients  # About $188 per client
         
-        # Define base savings per client and engagement multipliers
-        base_savings_per_client = 1000  # $1000 base savings per client
+        # JPM data (high engagement): 5000 clients, need to project annual from monthly
+        jpm_clients = 5000
+        jpm_monthly_savings = self.jpm_data['savings_amount'].sum()  # Total for first month
+        jpm_projected_annual = jpm_monthly_savings * 12  # Simple annual projection
+        
+        # Create evenly spaced points for linear visualization
+        num_companies = np.linspace(200, 50000, 50)  # Extend range to 50k clients
+        
+        # Define engagement multipliers relative to SVB's medium engagement
         engagement_multipliers = {
-            'frequently': 1.5,
-            'often': 1.0,
-            'rarely': 0.5
+            'Frequently': 1.5,  # JPM's level (high engagement)
+            'Often': 1.0,      # SVB's level (medium engagement)
+            'Rarely': 0.5      # Low engagement
         }
         
         predictions = {}
         
         # Create static plot
         plt.figure(figsize=(12, 6))
-        colors = {'frequently': '#4BC0C0', 'often': '#FF9F40', 'rarely': '#FF6384'}
+        colors = {'Frequently': '#4BC0C0', 'Often': '#FF9F40', 'Rarely': '#FF6384'}
+        linestyles = {'Frequently': '-', 'Often': '--', 'Rarely': ':'}
+        
+        # Add reference points
+        plt.scatter([svb_benchmark_clients], [svb_benchmark_savings], 
+                   color='blue', s=100, zorder=5,
+                   label='SVB Actual (41k clients, medium engagement)')
+        plt.scatter([jpm_clients], [jpm_projected_annual], 
+                   color='red', s=100, zorder=5,
+                   label='JPM Projected Annual (5k clients, high engagement)')
         
         for level, multiplier in engagement_multipliers.items():
             # Calculate linear savings
             savings = num_companies * base_savings_per_client * multiplier
             
-            predictions[level] = {
+            predictions[level.lower()] = {
                 'companies': num_companies.tolist(),
                 'savings': savings.tolist()
             }
             
-            # Add to static plot
-            plt.plot(num_companies, savings, label=level.capitalize(),
-                     color=colors[level])
+            # Add to static plot with distinct line styles and markers
+            plt.plot(num_companies, savings, 
+                     label=f'{level} (x{multiplier})',
+                     color=colors[level],
+                     linestyle=linestyles[level],
+                     linewidth=2,
+                     marker='o',
+                     markevery=5)
         
-        plt.title('Projected Annual Savings by Number of Clients')
-        plt.xlabel('Number of Clients')
-        plt.ylabel('Annual Savings ($)')
+        plt.title('Projected Annual Savings by Number of Clients', fontsize=14, pad=20)
+        plt.xlabel('Number of Clients', fontsize=12)
+        plt.ylabel('Annual Savings ($)', fontsize=12)
         plt.grid(True, alpha=0.3)
-        plt.legend(loc='upper left')
+        plt.legend(loc='upper left', fontsize=10)
         
-        # Format axes
-        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
-        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
+        # Format axes with linear scale
+        ax = plt.gca()
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
+        
+        # Ensure plot shows linear relationship clearly
+        plt.xlim(0, max(num_companies))
+        plt.ylim(0, max(savings) * 1.1)
         
         # Save static plot
+        plt.tight_layout()
         plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300)
         plt.close()
         
@@ -109,56 +135,35 @@ class SavingsModelVisualizer:
     def plot_historical_trends(self):
         """Plot historical savings trends in two separate plots for total and median savings"""
         # Calculate SVB monthly stats
-        self.svb_data['month'] = self.svb_data['date'].dt.to_period('M')
+        self.svb_data['month'] = pd.to_datetime(self.svb_data['date']).dt.to_period('M')
         svb_monthly_totals = self.svb_data.groupby('month')['savings_amount'].sum()
         svb_monthly_medians = self.svb_data.groupby('month')['savings_amount'].median()
         
         # Calculate JPM monthly stats
-        self.jpm_data['month'] = self.jpm_data['date'].dt.to_period('M')
+        self.jpm_data['month'] = pd.to_datetime(self.jpm_data['date']).dt.to_period('M')
         jpm_monthly_totals = self.jpm_data.groupby('month')['savings_amount'].sum()
         jpm_monthly_medians = self.jpm_data.groupby('month')['savings_amount'].median()
         
         # Create figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 12))
         
-        # Plot total savings
-        ax1.plot(range(len(svb_monthly_totals)), svb_monthly_totals.values, 
-                label='SVB', color='blue', marker='o')
-        ax1.plot(range(len(jpm_monthly_totals)), jpm_monthly_totals.values, 
-                label='JPM', color='red', marker='o')
-        ax1.set_title('Total Monthly Savings')
-        ax1.set_ylabel('Total Savings ($)')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
+        # Format month labels
+        def format_month(m):
+            return m.strftime('%b %Y')
         
-        # Plot median savings
-        ax2.plot(range(len(svb_monthly_medians)), svb_monthly_medians.values, 
-                label='SVB', color='blue', marker='o')
-        ax2.plot(range(len(jpm_monthly_medians)), jpm_monthly_medians.values, 
-                label='JPM', color='red', marker='o')
-        ax2.set_title('Median Savings per Deal')
-        ax2.set_ylabel('Median Savings ($)')
-        ax2.set_xlabel('Month')
-        ax2.legend()
-        ax2.grid(True, alpha=0.3)
+        # Plot 1: Total Monthly Savings
+        svb_months = [format_month(m.to_timestamp()) for m in svb_monthly_totals.index]
+        jpm_months = [format_month(m.to_timestamp()) for m in jpm_monthly_totals.index]
         
-        # Format y-axis labels
-        for ax in [ax1, ax2]:
-            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
+        # Plot actual data
+        ax1.plot(svb_months, svb_monthly_totals.values, 
+                label='SVB Actual', color='blue', marker='o', markersize=8, linewidth=2)
+        ax1.plot(jpm_months, jpm_monthly_totals.values, 
+                label='JPM Actual', color='red', marker='o', markersize=8, linewidth=2)
         
-        plt.tight_layout()
-        plt.savefig(self.static_dir / 'historical_trends.png', bbox_inches='tight', dpi=300)
-        plt.close()
-        
-
-        ax1.plot(svb_monthly_totals.index.astype(str), svb_monthly_totals,
-                label='SVB Total Savings', marker='o', color='blue')
-        ax1.plot(jpm_monthly_totals.index.astype(str), jpm_monthly_totals,
-                label='JPM Total Savings', marker='o', color='red')
-        
-        # Project JPM totals using SVB's growth rate
+        # Project JPM totals
         if len(jpm_monthly_totals) > 0 and len(svb_monthly_totals) > 1:
-            # Calculate SVB's average monthly growth rate
+            # Calculate average monthly growth rate from SVB data
             svb_growth_rates = svb_monthly_totals.pct_change().dropna()
             avg_monthly_growth = 1 + svb_growth_rates.mean()
             
@@ -171,75 +176,84 @@ class SavingsModelVisualizer:
                 
                 # Create month labels for projections
                 last_month = jpm_monthly_totals.index[-1]
-                projected_months = [pd.Period(last_month) + i + 1 
+                projected_months = [format_month((last_month + i + 1).to_timestamp()) 
                                   for i in range(remaining_months)]
                 
-                # Plot projections
-                ax1.plot([last_month.strftime('%Y-%m')] + 
-                        [m.strftime('%Y-%m') for m in projected_months],
+                # Plot projections with confidence interval
+                ax1.plot([format_month(last_month.to_timestamp())] + projected_months,
                         [last_total] + projected_totals,
-                        label='JPM Projected', linestyle='--', color='red')
+                        label='JPM Projected', linestyle='--', color='red', 
+                        linewidth=2, marker='s', markersize=6)
                 
                 # Add confidence interval
                 lower_bound = np.array([last_total] + projected_totals) * 0.8
                 upper_bound = np.array([last_total] + projected_totals) * 1.2
-                ax1.fill_between(
-                    [last_month.strftime('%Y-%m')] + 
-                    [m.strftime('%Y-%m') for m in projected_months],
-                    lower_bound, upper_bound,
-                    color='red', alpha=0.1)
+                ax1.fill_between([format_month(last_month.to_timestamp())] + projected_months,
+                                lower_bound, upper_bound,
+                                color='red', alpha=0.1,
+                                label='Confidence Interval (±20%)')
         
-        ax1.set_title('Total Monthly Savings')
-        ax1.set_xlabel('Month')
-        ax1.set_ylabel('Total Monthly Savings ($)')
+        ax1.set_title('Total Monthly Savings', fontsize=14, pad=20)
+        ax1.set_xlabel('Month', fontsize=12)
+        ax1.set_ylabel('Total Monthly Savings ($)', fontsize=12)
         ax1.tick_params(axis='x', rotation=45)
-        ax1.legend()
+        ax1.legend(fontsize=10)
         ax1.grid(True, alpha=0.3)
         
-        # Plot 2: Median Savings per Deal
-        ax2.plot(svb_monthly_medians.index.astype(str), svb_monthly_medians,
-                label='SVB Median per Deal', marker='s', color='blue')
-        ax2.plot(jpm_monthly_medians.index.astype(str), jpm_monthly_medians,
-                label='JPM Median per Deal', marker='s', color='red')
+        # Calculate monthly averages
+        svb_monthly_means = self.svb_data.groupby('month')['savings_amount'].mean()
+        jpm_monthly_means = self.jpm_data.groupby('month')['savings_amount'].mean()
+        
+        # Plot 2: Median and Average Savings per Deal
+        # Plot medians
+        ax2.plot(svb_months, svb_monthly_medians.values, 
+                label='SVB Median', color='blue', marker='s', markersize=8, linewidth=2)
+        ax2.plot(jpm_months, jpm_monthly_medians.values, 
+                label='JPM Median', color='red', marker='s', markersize=8, linewidth=2)
+        
+        # Plot averages (dashed lines)
+        ax2.plot(svb_months, svb_monthly_means.values,
+                label='SVB Average', color='blue', marker='o', markersize=6,
+                linestyle='--', linewidth=2)
+        ax2.plot(jpm_months, jpm_monthly_means.values,
+                label='JPM Average', color='red', marker='o', markersize=6,
+                linestyle='--', linewidth=2)
         
         # Project JPM medians
-        if len(jpm_monthly_medians) > 0:
-            # Use same growth rate as totals but with smaller factor
+        if len(jpm_monthly_medians) > 0 and len(svb_monthly_totals) > 1:
+            # Use same growth rate but with smaller factor for median projection
             remaining_months = 12 - len(jpm_monthly_medians)
             if remaining_months > 0:
                 last_median = jpm_monthly_medians.iloc[-1]
                 projected_medians = [last_median * (avg_monthly_growth ** (i+1)) 
                                    for i in range(remaining_months)]
                 
-                ax2.plot([last_month.strftime('%Y-%m')] + 
-                        [m.strftime('%Y-%m') for m in projected_months],
+                # Plot projections with confidence interval
+                ax2.plot([format_month(last_month.to_timestamp())] + projected_months,
                         [last_median] + projected_medians,
-                        label='JPM Projected', linestyle='--', color='red')
+                        label='JPM Projected', linestyle='--', color='red',
+                        linewidth=2, marker='s', markersize=6)
                 
                 # Add confidence interval
                 lower_bound = np.array([last_median] + projected_medians) * 0.8
                 upper_bound = np.array([last_median] + projected_medians) * 1.2
-                ax2.fill_between(
-                    [last_month.strftime('%Y-%m')] + 
-                    [m.strftime('%Y-%m') for m in projected_months],
-                    lower_bound, upper_bound,
-                    color='red', alpha=0.1)
+                ax2.fill_between([format_month(last_month.to_timestamp())] + projected_months,
+                                lower_bound, upper_bound,
+                                color='red', alpha=0.1,
+                                label='Confidence Interval (±20%)')
         
-        ax2.set_title('Median Savings per Deal')
-        ax2.set_xlabel('Month')
-        ax2.set_ylabel('Median Savings per Deal ($)')
+        ax2.set_title('Median and Average Savings per Deal', fontsize=14, pad=20)
+        ax2.set_xlabel('Month', fontsize=12)
+        ax2.set_ylabel('Median Savings per Deal ($)', fontsize=12)
         ax2.tick_params(axis='x', rotation=45)
-        ax2.legend()
+        ax2.legend(fontsize=10)
         ax2.grid(True, alpha=0.3)
         
-        plt.tight_layout()
-        plt.savefig(self.static_dir / 'historical_trends.png', bbox_inches='tight', dpi=300)
-        plt.close()
+        # Format y-axis labels with dollar signs and commas
+        for ax in [ax1, ax2]:
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        
         plt.savefig(self.static_dir / 'historical_trends.png', bbox_inches='tight', dpi=300)
         plt.close()
     
