@@ -66,7 +66,7 @@ class SavingsModelVisualizer:
         jpm_projected_annual = jpm_monthly_savings * 12  # Simple annual projection
         
         # Create evenly spaced points for linear visualization
-        num_companies = np.linspace(200, 50000, 50)  # Extend range to 50k clients
+        num_companies = np.linspace(200, 2000000, 50)  # Extend range to 2M clients
         
         # Define engagement multipliers relative to SVB's medium engagement
         engagement_multipliers = {
@@ -101,7 +101,7 @@ class SavingsModelVisualizer:
             
             # Add to static plot with distinct line styles and markers
             plt.plot(num_companies, savings, 
-                     label=f'{level} (x{multiplier})',
+                     label=f'{level}',
                      color=colors[level],
                      linestyle=linestyles[level],
                      linewidth=2,
@@ -120,12 +120,12 @@ class SavingsModelVisualizer:
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
         # Ensure plot shows linear relationship clearly
-        plt.xlim(0, max(num_companies))
+        plt.xlim(0, 2000000)  # Set x-axis to 2M clients
         plt.ylim(0, max(savings) * 1.1)
         
         # Save static plot
         plt.tight_layout()
-        plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300)
+        plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300, format='png', facecolor='white')
         plt.close()
         
         # Save predictions for JavaScript visualization
