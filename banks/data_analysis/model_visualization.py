@@ -165,17 +165,19 @@ class SavingsModelVisualizer:
         
         # Project JPM totals
         if len(jpm_monthly_totals) > 0 and len(svb_monthly_totals) > 1:
-            # Calculate average monthly growth rate from SVB data
-            svb_growth_rates = svb_monthly_totals.pct_change().dropna()
-            avg_monthly_growth = 1 + svb_growth_rates.mean()
+            # Calculate growth rates from both total and median SVB data
+            svb_total_growth = svb_monthly_totals.pct_change().dropna().mean()
+            svb_median_growth = svb_monthly_medians.pct_change().dropna().mean()
             
-            # Calculate the ratio between JPM and SVB monthly averages (excluding AWS)
-            jpm_avg = jpm_monthly_totals.mean()
-            svb_avg = svb_monthly_totals.mean()
-            scale_factor = jpm_avg / svb_avg if svb_avg > 0 else 1.0
+            # Calculate ratios between JPM and SVB for both metrics
+            total_scale = jpm_monthly_totals.mean() / svb_monthly_totals.mean() if svb_monthly_totals.mean() > 0 else 1.0
+            median_scale = jpm_monthly_medians.mean() / svb_monthly_medians.mean() if svb_monthly_medians.mean() > 0 else 1.0
             
-            # Adjust growth rate based on the scale factor
-            adj_monthly_growth = 1 + (svb_growth_rates.mean() * scale_factor)
+            # Weighted average of growth rates (60% weight on median growth)
+            adj_monthly_growth = 1 + (
+                0.4 * svb_total_growth * total_scale +
+                0.6 * svb_median_growth * median_scale
+            )
             
             # Project remaining months
             remaining_months = 12 - len(jpm_monthly_totals)
