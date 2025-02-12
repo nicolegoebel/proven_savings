@@ -180,43 +180,31 @@ if predict_button:
         colors = {'Frequently': '#4BC0C0', 'Often': '#FF9F40', 'Rarely': '#FF6384'}
         multipliers = {'Frequently': 1.5, 'Often': 1.0, 'Rarely': 0.5}
         
-        # Plot savings based on company types
-        if len(company_types) == 2:  # Both types selected
-            # Plot combined savings for each engagement level
-            for level, mult in multipliers.items():
-                startup_savings = client_points * 188 * mult
-                sme_savings = client_points * 188 * 0.7 * mult  # 30% lower for SMEs
-                total_savings = startup_savings + sme_savings
-                plt.plot(client_points, total_savings, 
-                         label=f'Combined - {level}',
-                         color=colors[level],
-                         linestyle='-' if level == engagement_level.capitalize() else '--',
-                         linewidth=3 if level == engagement_level.capitalize() else 1)
-                if level == engagement_level.capitalize():
-                    plt.scatter(client_points, total_savings, color=colors[level], s=100)
-        else:
-            # Plot individual company type
-            if "startup" in company_types:
-                for level, mult in multipliers.items():
-                    savings = client_points * 188 * mult
-                    plt.plot(client_points, savings, 
-                             label=f'Startups - {level}',
-                             color=colors[level],
-                             linestyle='-' if level == engagement_level.capitalize() else '--',
-                             linewidth=3 if level == engagement_level.capitalize() else 1)
-                    if level == engagement_level.capitalize():
-                        plt.scatter(client_points, savings, color=colors[level], s=100)
+        # Plot savings based on company types and engagement levels
+        for level in ['rarely', 'often', 'frequently']:
+            # Get predictions for current and doubled clients
+            current_pred = analyzer.predict_annual_savings(
+                num_clients=num_clients,
+                company_types=company_types,
+                engagement_level=level
+            )['total_annual_savings']
             
-            if "sme" in company_types:
-                for level, mult in multipliers.items():
-                    savings = client_points * 188 * 0.7 * mult  # 30% lower for SMEs
-                    plt.plot(client_points, savings, 
-                             label=f'SMEs - {level}',
-                             color=colors[level],
-                             linestyle=':' if level == engagement_level.capitalize() else '-.',
-                             linewidth=3 if level == engagement_level.capitalize() else 1)
-                    if level == engagement_level.capitalize():
-                        plt.scatter(client_points, savings, color=colors[level], s=100)
+            doubled_pred = analyzer.predict_annual_savings(
+                num_clients=num_clients * 2,
+                company_types=company_types,
+                engagement_level=level
+            )['total_annual_savings']
+            
+            # Plot the predictions
+            savings = [current_pred, doubled_pred]
+            plt.plot(client_points, savings,
+                     label=f'{level.capitalize()}',
+                     color=colors[level.capitalize()],
+                     linestyle='-' if level == engagement_level else '--',
+                     linewidth=3 if level == engagement_level else 1)
+            
+            if level == engagement_level:
+                plt.scatter(client_points, savings, color=colors[level.capitalize()], s=100)
         
         plt.title('Projected Annual Savings Growth\n(Current vs Double Clients)', fontsize=14, pad=20)
         plt.xlim(num_clients * 0.9, num_clients * 2.1)  # Set x-axis with some padding
