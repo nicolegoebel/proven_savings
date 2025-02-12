@@ -169,11 +169,19 @@ class SavingsModelVisualizer:
             svb_growth_rates = svb_monthly_totals.pct_change().dropna()
             avg_monthly_growth = 1 + svb_growth_rates.mean()
             
+            # Calculate the ratio between JPM and SVB monthly averages (excluding AWS)
+            jpm_avg = jpm_monthly_totals.mean()
+            svb_avg = svb_monthly_totals.mean()
+            scale_factor = jpm_avg / svb_avg if svb_avg > 0 else 1.0
+            
+            # Adjust growth rate based on the scale factor
+            adj_monthly_growth = 1 + (svb_growth_rates.mean() * scale_factor)
+            
             # Project remaining months
             remaining_months = 12 - len(jpm_monthly_totals)
             if remaining_months > 0:
                 last_total = jpm_monthly_totals.iloc[-1]
-                projected_totals = [last_total * (avg_monthly_growth ** (i+1)) 
+                projected_totals = [last_total * (adj_monthly_growth ** (i+1)) 
                                   for i in range(remaining_months)]
                 
                 # Create month labels for projections
@@ -188,8 +196,9 @@ class SavingsModelVisualizer:
                         linewidth=2, marker='s', markersize=6)
                 
                 # Add confidence interval
-                lower_bound = np.array([last_total] + projected_totals) * 0.8
-                upper_bound = np.array([last_total] + projected_totals) * 1.2
+                # Wider confidence interval due to AWS removal uncertainty
+                lower_bound = np.array([last_total] + projected_totals) * 0.7
+                upper_bound = np.array([last_total] + projected_totals) * 1.3
                 ax1.fill_between([format_month(last_month.to_timestamp())] + projected_months,
                                 lower_bound, upper_bound,
                                 color='red', alpha=0.1,
