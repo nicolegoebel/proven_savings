@@ -24,6 +24,16 @@ class SavingsModelVisualizer:
         self.jpm_data = pd.read_csv(self.data_dir / "money_saved_JPM2025.csv")
         self.svb_data = pd.read_csv(self.data_dir / "money_saved_svb2024.csv")
         
+        # Print initial counts
+        print(f"Initial JPM rows: {len(self.jpm_data)}")
+        print(f"Initial SVB rows: {len(self.svb_data)}")
+        
+        # Count AWS deals before filtering
+        aws_jpm = self.jpm_data['Name of offer'].str.contains('AWS', case=False, na=False).sum()
+        aws_svb = self.svb_data['Name of offer'].str.contains('AWS', case=False, na=False).sum()
+        print(f"AWS deals in JPM: {aws_jpm}")
+        print(f"AWS deals in SVB: {aws_svb}")
+        
         # Filter out internal bank and Amazon deals
         jpm_filter = ~(self.jpm_data['Redeemer Domain'].str.contains('jpmorgan|chase', case=False, na=False) | 
                       self.jpm_data['Name of offer'].str.contains('AWS', case=False, na=False))
@@ -32,6 +42,10 @@ class SavingsModelVisualizer:
         
         self.jpm_data = self.jpm_data[jpm_filter].copy()
         self.svb_data = self.svb_data[svb_filter].copy()
+        
+        # Print filtered counts
+        print(f"After filtering JPM rows: {len(self.jpm_data)}")
+        print(f"After filtering SVB rows: {len(self.svb_data)}")
         
         # Convert dates - JPM uses day first (UK format), SVB uses month first (US format)
         self.jpm_data['date'] = pd.to_datetime(self.jpm_data['Offer redeemed on'], dayfirst=True)
@@ -168,16 +182,30 @@ class SavingsModelVisualizer:
             # Calculate growth rates from both total and median SVB data
             svb_total_growth = svb_monthly_totals.pct_change().dropna().mean()
             svb_median_growth = svb_monthly_medians.pct_change().dropna().mean()
+            print(f"\nGrowth rates:")
+            print(f"SVB total growth rate: {svb_total_growth:.2%}")
+            print(f"SVB median growth rate: {svb_median_growth:.2%}")
             
             # Calculate ratios between JPM and SVB for both metrics
             total_scale = jpm_monthly_totals.mean() / svb_monthly_totals.mean() if svb_monthly_totals.mean() > 0 else 1.0
             median_scale = jpm_monthly_medians.mean() / svb_monthly_medians.mean() if svb_monthly_medians.mean() > 0 else 1.0
+            print(f"\nScale factors:")
+            print(f"Total scale: {total_scale:.2f}")
+            print(f"Median scale: {median_scale:.2f}")
+            
+            # Print monthly averages
+            print(f"\nMonthly averages:")
+            print(f"JPM total average: ${jpm_monthly_totals.mean():,.2f}")
+            print(f"SVB total average: ${svb_monthly_totals.mean():,.2f}")
+            print(f"JPM median average: ${jpm_monthly_medians.mean():,.2f}")
+            print(f"SVB median average: ${svb_monthly_medians.mean():,.2f}")
             
             # Weighted average of growth rates (60% weight on median growth)
             adj_monthly_growth = 1 + (
                 0.4 * svb_total_growth * total_scale +
                 0.6 * svb_median_growth * median_scale
             )
+            print(f"\nFinal growth rate: {(adj_monthly_growth-1):.2%}")
             
             # Project remaining months
             remaining_months = 12 - len(jpm_monthly_totals)
