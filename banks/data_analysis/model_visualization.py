@@ -24,10 +24,10 @@ class SavingsModelVisualizer:
         self.jpm_data = pd.read_csv(self.data_dir / "money_saved_JPM2025.csv")
         self.svb_data = pd.read_csv(self.data_dir / "money_saved_svb2024.csv")
         
-        # Filter out JPM, Chase, and Amazon deals
+        # Filter out internal bank and Amazon deals
         jpm_filter = ~(self.jpm_data['Redeemer Domain'].str.contains('jpmorgan|chase', case=False, na=False) | 
                       self.jpm_data['Name of offer'].str.contains('amazon', case=False, na=False))
-        svb_filter = ~(self.svb_data['Redeemer Domain'].str.contains('jpmorgan|chase', case=False, na=False) | 
+        svb_filter = ~(self.svb_data['Redeemer Domain'].str.contains('svb', case=False, na=False) | 
                       self.svb_data['Name of offer'].str.contains('amazon', case=False, na=False))
         
         self.jpm_data = self.jpm_data[jpm_filter].copy()
