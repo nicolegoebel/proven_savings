@@ -26,9 +26,9 @@ class SavingsModelVisualizer:
         
         # Filter out internal bank and Amazon deals
         jpm_filter = ~(self.jpm_data['Redeemer Domain'].str.contains('jpmorgan|chase', case=False, na=False) | 
-                      self.jpm_data['Name of offer'].str.contains('amazon', case=False, na=False))
+                      self.jpm_data['Name of offer'].str.contains('AWS', case=False, na=False))
         svb_filter = ~(self.svb_data['Redeemer Domain'].str.contains('svb', case=False, na=False) | 
-                      self.svb_data['Name of offer'].str.contains('amazon', case=False, na=False))
+                      self.svb_data['Name of offer'].str.contains('AWS', case=False, na=False))
         
         self.jpm_data = self.jpm_data[jpm_filter].copy()
         self.svb_data = self.svb_data[svb_filter].copy()
