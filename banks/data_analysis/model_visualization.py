@@ -186,12 +186,17 @@ class SavingsModelVisualizer:
             print(f"SVB total growth rate: {svb_total_growth:.2%}")
             print(f"SVB median growth rate: {svb_median_growth:.2%}")
             
-            # Calculate ratios between JPM and SVB for both metrics
-            total_scale = jpm_monthly_totals.mean() / svb_monthly_totals.mean() if svb_monthly_totals.mean() > 0 else 1.0
-            median_scale = jpm_monthly_medians.mean() / svb_monthly_medians.mean() if svb_monthly_medians.mean() > 0 else 1.0
-            print(f"\nScale factors:")
-            print(f"Total scale: {total_scale:.2f}")
-            print(f"Median scale: {median_scale:.2f}")
+            # Calculate engagement-adjusted ratios between JPM and SVB
+            # JPM has high engagement (1.2x multiplier), SVB has medium engagement (1.0x multiplier)
+            engagement_ratio = 1.2  # JPM's high engagement vs SVB's medium engagement
+            
+            # Apply engagement adjustment to scale factors
+            total_scale = (jpm_monthly_totals.mean() / svb_monthly_totals.mean() if svb_monthly_totals.mean() > 0 else 1.0) * engagement_ratio
+            median_scale = (jpm_monthly_medians.mean() / svb_monthly_medians.mean() if svb_monthly_medians.mean() > 0 else 1.0) * engagement_ratio
+            
+            print(f"\nScale factors (with engagement adjustment):")
+            print(f"Total scale: {total_scale:.2f} (includes 1.2x JPM engagement multiplier)")
+            print(f"Median scale: {median_scale:.2f} (includes 1.2x JPM engagement multiplier)")
             
             # Print monthly averages
             print(f"\nMonthly averages:")
@@ -226,9 +231,10 @@ class SavingsModelVisualizer:
                         linewidth=2, marker='s', markersize=6)
                 
                 # Add confidence interval
-                # Wider confidence interval due to AWS removal uncertainty
-                lower_bound = np.array([last_total] + projected_totals) * 0.7
-                upper_bound = np.array([last_total] + projected_totals) * 1.3
+                # Confidence interval based on engagement levels
+                # Higher engagement (JPM) means tighter bounds due to more predictable behavior
+                lower_bound = np.array([last_total] + projected_totals) * 0.8  # Tighter bounds for high engagement
+                upper_bound = np.array([last_total] + projected_totals) * 1.2
                 ax1.fill_between([format_month(last_month.to_timestamp())] + projected_months,
                                 lower_bound, upper_bound,
                                 color='red', alpha=0.1,
