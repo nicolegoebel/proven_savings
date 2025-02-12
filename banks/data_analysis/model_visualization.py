@@ -81,8 +81,8 @@ class SavingsModelVisualizer:
         jpm_monthly_savings = self.jpm_data['savings_amount'].sum()  # Total for first month
         jpm_projected_annual = jpm_monthly_savings * 12  # Simple annual projection
         
-        # Create evenly spaced points for linear visualization
-        num_companies = np.linspace(200, 2000000, 50)  # Extend range to 2M clients
+        # Create logarithmically spaced points starting from 10 clients
+        num_companies = np.logspace(1, np.log10(2000000), 50)  # Start at 10^1 = 10, end at 2M
         
         # Define engagement multipliers relative to SVB's medium engagement
         engagement_multipliers = {
@@ -135,8 +135,9 @@ class SavingsModelVisualizer:
         ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
-        # Ensure plot shows linear relationship clearly
-        plt.xlim(0, 2000000)  # Set x-axis to 2M clients
+        # Set x-axis to start at 10 and end at 2M clients
+        plt.xscale('log')  # Use log scale for better visibility of small numbers
+        plt.xlim(10, 2000000)
         plt.ylim(0, max(savings) * 1.1)
         
         # Save static plot
