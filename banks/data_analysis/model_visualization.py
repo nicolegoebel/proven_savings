@@ -93,8 +93,9 @@ class SavingsModelVisualizer:
         
         predictions = {}
         
-        # Create static plot
-        plt.figure(figsize=(12, 6))
+        # Clear any existing plots and create new figure
+        plt.close('all')
+        fig = plt.figure(figsize=(12, 6))
         colors = {'Frequently': '#4BC0C0', 'Often': '#FF9F40', 'Rarely': '#FF6384'}
         linestyles = {'Frequently': '-', 'Often': '--', 'Rarely': ':'}
         
@@ -146,7 +147,8 @@ class SavingsModelVisualizer:
         plt.close()
         
         # Create zoomed-in plot (10 to 100k clients)
-        plt.figure(figsize=(12, 6))
+        plt.close('all')
+        fig = plt.figure(figsize=(12, 6))
         
         # Create points for zoomed range
         num_companies_zoomed = np.logspace(1, 5, 50)  # 10^1 to 10^5
