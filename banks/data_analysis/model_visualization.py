@@ -140,9 +140,59 @@ class SavingsModelVisualizer:
         plt.xlim(10, 2000000)
         plt.ylim(0, max(savings) * 1.1)
         
-        # Save static plot
+        # Save full range plot
         plt.tight_layout()
         plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300, format='png', facecolor='white')
+        plt.close()
+        
+        # Create zoomed-in plot (10 to 100k clients)
+        plt.figure(figsize=(12, 6))
+        
+        # Create points for zoomed range
+        num_companies_zoomed = np.logspace(1, 5, 50)  # 10^1 to 10^5
+        
+        # Plot zoomed reference points
+        if svb_benchmark_clients <= 100000:
+            plt.scatter([svb_benchmark_clients], [svb_benchmark_savings], 
+                    color='blue', s=100, zorder=5,
+                    label='SVB Actual (41k clients, medium engagement)')
+        if jpm_clients <= 100000:
+            plt.scatter([jpm_clients], [jpm_projected_annual], 
+                    color='red', s=100, zorder=5,
+                    label='JPM Projected Annual (5k clients, high engagement)')
+        
+        # Plot zoomed engagement lines
+        for level, multiplier in engagement_multipliers.items():
+            # Calculate linear savings for zoomed range
+            savings_zoomed = num_companies_zoomed * base_savings_per_client * multiplier
+            
+            plt.plot(num_companies_zoomed, savings_zoomed, 
+                     label=f'{level}',
+                     color=colors[level],
+                     linestyle=linestyles[level],
+                     linewidth=2,
+                     marker='o',
+                     markevery=5)
+        
+        plt.title('Projected Annual Savings by Number of Clients (Zoomed 10-100k)', fontsize=14, pad=20)
+        plt.xlabel('Number of Clients', fontsize=12)
+        plt.ylabel('Annual Savings ($)', fontsize=12)
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='upper left', fontsize=10)
+        
+        # Format axes
+        ax = plt.gca()
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
+        
+        # Set zoomed axis limits
+        plt.xscale('log')
+        plt.xlim(10, 100000)
+        plt.ylim(0, base_savings_per_client * 100000 * 1.5)  # Scale y-axis to max savings at 100k clients
+        
+        # Save zoomed plot
+        plt.tight_layout()
+        plt.savefig(self.static_dir / 'savings_vs_clients_zoomed.png', bbox_inches='tight', dpi=300, format='png', facecolor='white')
         plt.close()
         
         # Save predictions for JavaScript visualization

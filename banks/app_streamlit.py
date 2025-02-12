@@ -237,6 +237,18 @@ if predict_button:
         # Historical Data Section
         st.header("Historical Data")
         
+        # Savings vs Clients Plots
+        st.subheader("Savings by Number of Clients")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("Full range (10 to 2M clients):")
+            st.image(str(static_dir / 'savings_vs_clients.png'), use_container_width=True)
+            
+        with col2:
+            st.write("Zoomed view (10 to 100k clients):")
+            st.image(str(static_dir / 'savings_vs_clients_zoomed.png'), use_container_width=True)
+        
         # Historical Trends
         st.subheader("Monthly Savings Trends")
         st.write("This plot shows the actual and projected monthly savings for both banks:")
