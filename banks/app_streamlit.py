@@ -7,20 +7,15 @@ from data_analysis.bank_stats import BankSavingsAnalyzer
 from data_analysis.model_visualization import SavingsModelVisualizer
 
 def format_number(num):
-    """Format numbers to be rounded to nearest 10 for values under 1000,
-    nearest 100 for larger values, and use M/B for millions/billions."""
-    if abs(num) < 1000:
-        num = round(num / 10) * 10  # Round to nearest 10
-        return f"${num:,.0f}"
-    
-    num = round(num / 100) * 100  # Round to nearest 100
-    
+    """Format numbers with appropriate units (K, M, B) and minimal decimal places."""
     if abs(num) >= 1e9:
         return f"${num/1e9:.1f}B"
     elif abs(num) >= 1e6:
         return f"${num/1e6:.1f}M"
+    elif abs(num) >= 1e3:
+        return f"${num/1e3:.1f}K"
     else:
-        return f"${num:,.0f}"
+        return f"${num:.0f}"
 
 # Set page config
 st.set_page_config(
@@ -28,15 +23,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize paths and analyzers
+# Initialize paths and analyzer
 app_dir = Path(__file__).parent
 data_dir = app_dir / 'data'
-static_dir = app_dir / 'static'
 analyzer = BankSavingsAnalyzer(data_dir)
-visualizer = SavingsModelVisualizer(data_dir)
-
-# Generate visualizations
-visualizer.generate_all_visualizations()
 
 # Title
 st.title("Potential Bank Savings with Proven")
@@ -45,15 +35,41 @@ st.title("Potential Bank Savings with Proven")
 with st.sidebar:
     st.header("Prediction Parameters")
     
-    # Number of Clients slider
-    num_clients = st.slider(
-        "Number of Clients",
-        min_value=10,
-        max_value=2000000,
-        value=1000,
-        step=10,  # Smaller step size for better control
-        format="%d"
+    # Number of Clients selection
+    client_range = st.radio(
+        "Client Range",
+        options=["Small (1-100)", "Medium (100-10K)", "Large (10K-2M)"],
+        index=0
     )
+    
+    # Adjust slider based on selected range
+    if client_range == "Small (1-100)":
+        num_clients = st.slider(
+            "Number of Clients",
+            min_value=1,
+            max_value=100,
+            value=10,
+            step=1,
+            format="%d"
+        )
+    elif client_range == "Medium (100-10K)":
+        num_clients = st.slider(
+            "Number of Clients",
+            min_value=100,
+            max_value=10000,
+            value=1000,
+            step=100,
+            format="%d"
+        )
+    else:  # Large range
+        num_clients = st.slider(
+            "Number of Clients",
+            min_value=10000,
+            max_value=2000000,
+            value=100000,
+            step=10000,
+            format="%d"
+        )
     
     # Company Types
     st.subheader("Company Types")
@@ -89,79 +105,55 @@ if predict_button:
             engagement_level=engagement_level
         )
         
-        # Get top offers
-        top_offers = analyzer.get_top_offers(
-            num_clients=num_clients,
-            company_types=company_types,
-            engagement_level=engagement_level
-        )
-        
-        # Display results in columns
+        # Display savings metrics
+        st.header("Potential Savings")
         col1, col2 = st.columns(2)
         
-        # Column 1: Savings Metrics
         with col1:
-            st.header("Potential Savings")
-            metrics_col1, metrics_col2 = st.columns(2)
-            
-            with metrics_col1:
-                st.metric(
-                    "Total Annual Savings",
-                    format_number(annual_savings['total_annual_savings'])
-                )
-                st.metric(
-                    "Average Monthly Savings",
-                    format_number(annual_savings['monthly_savings'])
-                )
-            
-            with metrics_col2:
-                st.metric(
-                    "Annual Savings per Company",
-                    format_number(annual_savings['avg_savings_per_company'])
-                )
-                st.metric(
-                    "Monthly Savings per Company",
-                    format_number(annual_savings['avg_savings_per_company']/12)
-                )
+            st.metric(
+                "Total Annual Savings",
+                format_number(annual_savings['total_annual_savings'])
+            )
         
-        # Column 2: Top Offers
         with col2:
-            st.header("Top 10 Potential Deals")
-            st.dataframe(
-                top_offers[['offer_name', 'avg_savings']].rename(columns={
-                    'offer_name': 'Deal Name',
-                    'avg_savings': 'Potential Savings'
-                }).style.format({
-                    'Potential Savings': '${:,.2f}'
-                }),
-                hide_index=True
+            st.metric(
+                "Total Monthly Savings",
+                format_number(annual_savings['total_annual_savings'] / 12)
             )
         
         # Insights Section
         st.header("Key Insights")
         
         # Calculate insights for each company type
-        if "startup" in company_types:
-            # Calculate savings based on SVB benchmark ($188 per client)
-            startup_savings = num_clients * 188 * (1.5 if engagement_level == "frequently" else 1.0 if engagement_level == "often" else 0.5)
+        if "startup" in company_types and "sme" not in company_types:
+            # Get startup-only predictions
+            startup_pred = analyzer.predict_annual_savings(
+                num_clients=num_clients,
+                company_types=["startup"],
+                engagement_level=engagement_level
+            )
             st.info(
                 f"**Startups:** With {num_clients:,} clients at {engagement_level} engagement level, "
-                f"expect {format_number(startup_savings)} in annual savings."
+                f"expect {format_number(startup_pred['total_annual_savings'])} in annual savings."
             )
         
-        if "sme" in company_types:
-            # SMEs have 30% lower savings on average
-            sme_savings = num_clients * 188 * 0.7 * (1.5 if engagement_level == "frequently" else 1.0 if engagement_level == "often" else 0.5)
+        if "sme" in company_types and "startup" not in company_types:
+            # Get SME-only predictions
+            sme_pred = analyzer.predict_annual_savings(
+                num_clients=num_clients,
+                company_types=["sme"],
+                engagement_level=engagement_level
+            )
             st.warning(
                 f"**SMEs:** With {num_clients:,} clients at {engagement_level} engagement level, "
-                f"expect {format_number(sme_savings)} in annual savings."
+                f"expect {format_number(sme_pred['total_annual_savings'])} in annual savings."
             )
         
         if len(company_types) == 2:
-            mixed_savings = (startup_savings + sme_savings) / 2
+            # Mixed portfolio predictions were already calculated in annual_savings
             st.success(
                 f"**Mixed Portfolio:** With {num_clients:,} total clients at {engagement_level} engagement level, "
-                f"expect an average of {format_number(mixed_savings)} in annual savings."
+                f"expect an average of {format_number(annual_savings['total_annual_savings'])} in annual savings."
             )
         
         # Display Savings Projections Section
@@ -222,81 +214,5 @@ if predict_button:
         st.pyplot(fig)
         plt.close()
         
-        # Historical Data Section
-        st.header("Historical Data")
+
         
-        # Savings vs Clients Plots
-        st.subheader("Savings by Number of Clients")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.write("Full range (10 to 2M clients):")
-            st.image(str(static_dir / 'savings_vs_clients.png'), use_container_width=True)
-            
-        with col2:
-            st.write("Zoomed view (10 to 100k clients):")
-            st.image(str(static_dir / 'savings_vs_clients_zoomed.png'), use_container_width=True)
-        
-        # Historical Trends
-        st.subheader("Monthly Savings Trends")
-        st.write("This plot shows the actual and projected monthly savings for both banks:")
-        st.image(str(static_dir / 'historical_trends.png'), use_container_width=True)
-        
-        # Bank Statistics
-        st.subheader("Current Statistics")
-
-# Get statistics
-stats = analyzer.get_all_stats()
-
-# Display historical data in columns
-col1, col2 = st.columns(2)
-
-# JPM Statistics
-with col1:
-    st.subheader("JPM Statistics")
-    st.markdown(f"""
-    * Total Savings: {format_number(stats['JPM']['total_savings'])}
-    * Avg per Redemption: {format_number(stats['JPM']['avg_savings_per_redemption'])}
-    * Unique Companies: {stats['JPM']['unique_companies']:,}
-    * Total Deal Redemptions: {stats['JPM']['total_redemptions']:,}
-    * Avg Redemptions per Company: {stats['JPM']['avg_redemptions_per_company']:.1f}
-    """)
-    
-    # Display top 10 companies for JPM
-    st.subheader("Top 10 Companies by Savings")
-    top_jpm = analyzer.get_top_companies(bank='JPM', n=10)
-    for idx, row in top_jpm.iterrows():
-        st.markdown(f"{idx + 1}. **{row['company']}**")
-        st.markdown(f"   - Total Savings: {format_number(row['total_savings'])}")
-        st.markdown(f"   - Median per Deal: {format_number(row['median_savings'])}")
-
-# SVB Statistics
-with col2:
-    st.subheader("SVB Statistics")
-    st.markdown(f"""
-    * Total Savings: {format_number(stats['SVB']['total_savings'])}
-    * Avg per Redemption: {format_number(stats['SVB']['avg_savings_per_redemption'])}
-    * Unique Companies: {stats['SVB']['unique_companies']:,}
-    * Total Deal Redemptions: {stats['SVB']['total_redemptions']:,}
-    * Avg Redemptions per Company: {stats['SVB']['avg_redemptions_per_company']:.1f}
-    """)
-    
-    # Display top 10 companies for SVB
-    st.subheader("Top 10 Companies by Savings")
-    top_svb = analyzer.get_top_companies(bank='SVB', n=10)
-    for idx, row in top_svb.iterrows():
-        st.markdown(f"{idx + 1}. **{row['company']}**")
-        st.markdown(f"   - Total Savings: {format_number(row['total_savings'])}")
-        st.markdown(f"   - Median per Deal: {format_number(row['median_savings'])}")
-
-# Company Distribution
-st.subheader("Company Savings Distribution")
-st.image(str(static_dir / 'company_distribution.png'), use_container_width=True)
-
-# Savings vs Clients
-st.subheader("Projected Annual Savings by Number of Clients")
-st.write("This chart shows how annual savings scale with the number of clients at different engagement levels:")
-st.write("- **Frequently (x1.5)**: High engagement (JPM's level)")
-st.write("- **Often (x1.0)**: Medium engagement (SVB's level)")
-st.write("- **Rarely (x0.5)**: Low engagement")
-st.image(str(static_dir / 'savings_vs_clients.png'), use_container_width=True)

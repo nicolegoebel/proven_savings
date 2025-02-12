@@ -131,19 +131,32 @@ class SavingsModelVisualizer:
         plt.grid(True, alpha=0.3)
         plt.legend(loc='upper left', fontsize=10)
         
-        # Format axes with linear scale
+        # Format axes with log scale for x-axis
         ax = plt.gca()
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+        
+        # Custom formatter to avoid scientific notation
+        def format_number(x, p):
+            if x < 1000:
+                return f'{int(x):d}'
+            elif x < 1000000:
+                return f'{int(x/1000)}k'
+            else:
+                return f'{x/1000000:.1f}M'
+        
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(format_number))
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
-        # Set x-axis to start at 10 and end at 2M clients
-        plt.xscale('log')  # Use log scale for better visibility of small numbers
+        # Set scale and limits
+        plt.xscale('log')
         plt.xlim(10, 2000000)
+        
+        # Add grid with appropriate scaling
+        plt.grid(True, which='major', linestyle='-', alpha=0.3)
+        plt.grid(True, which='minor', linestyle=':', alpha=0.2)
         plt.ylim(0, max(savings) * 1.1)
         
         # Save full range plot
-        plt.tight_layout()
-        plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300, format='png', facecolor='white')
+        plt.savefig(self.static_dir / 'savings_vs_clients.png', bbox_inches='tight', dpi=300, format='png', facecolor='white', pad_inches=0.3)
         plt.close()
         
         # Create zoomed-in plot (10 to 100k clients)
@@ -182,19 +195,32 @@ class SavingsModelVisualizer:
         plt.grid(True, alpha=0.3)
         plt.legend(loc='upper left', fontsize=10)
         
-        # Format axes
+        # Format axes with log scale for x-axis
         ax = plt.gca()
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+        
+        # Custom formatter to avoid scientific notation
+        def format_number(x, p):
+            if x < 1000:
+                return f'{int(x):d}'
+            elif x < 1000000:
+                return f'{int(x/1000)}k'
+            else:
+                return f'{x/1000000:.1f}M'
+        
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(format_number))
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
         
-        # Set zoomed axis limits
+        # Set scale and limits
         plt.xscale('log')
         plt.xlim(10, 100000)
         plt.ylim(0, base_savings_per_client * 100000 * 1.5)  # Scale y-axis to max savings at 100k clients
         
+        # Add grid with appropriate scaling
+        plt.grid(True, which='major', linestyle='-', alpha=0.3)
+        plt.grid(True, which='minor', linestyle=':', alpha=0.2)
+        
         # Save zoomed plot
-        plt.tight_layout()
-        plt.savefig(self.static_dir / 'savings_vs_clients_zoomed.png', bbox_inches='tight', dpi=300, format='png', facecolor='white')
+        plt.savefig(self.static_dir / 'savings_vs_clients_zoomed.png', bbox_inches='tight', dpi=300, format='png', facecolor='white', pad_inches=0.3)
         plt.close()
         
         # Save predictions for JavaScript visualization
@@ -408,7 +434,7 @@ class SavingsModelVisualizer:
         plt.close()
     
     def generate_all_visualizations(self):
-        """Generate all visualizations"""
+        """Generate necessary visualizations"""
+        # We only need to generate the prediction surface
+        # as that's the only plot we're using in the app
         self.generate_prediction_surface()
-        self.plot_historical_trends()
-        self.plot_company_distribution()

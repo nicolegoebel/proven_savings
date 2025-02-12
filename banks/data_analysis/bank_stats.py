@@ -95,50 +95,32 @@ class BankSavingsAnalyzer:
         engagement_level : str
             One of 'rarely', 'often', 'frequently'
         """
-        # Calculate actual savings per client per year from historical data, adjusting for engagement levels
+        # Base amount per client per year
+        base_amount = 240  # $240 per client per year at frequent engagement
         
-        # SVB data (41,000 clients, 7.7M annual, medium/often engagement)
-        svb_annual_per_client = 7.7e6 / 41000  # ~$188 per client per year
-        # Adjust SVB data up to 'frequent' baseline for fair comparison
-        svb_frequent_baseline = svb_annual_per_client / 1.0 * 1.5  # Convert from 'often' to 'frequent' baseline
-        
-        # JPM data (5,000 clients, 1.7M monthly = 20.4M annual, high/frequent engagement)
-        jpm_annual_per_client = 20.4e6 / 5000  # ~$4,080 per client per year
-        # JPM is already at 'frequent' engagement level, no adjustment needed
-        
-        # Use weighted average as baseline (now both at 'frequent' engagement level)
-        total_clients = 41000 + 5000
-        base_annual_per_client_frequent = (svb_frequent_baseline * 41000 + jpm_annual_per_client * 5000) / total_clients
-        
-        # Engagement level multipliers relative to 'frequent' baseline
+        # Engagement level multipliers
         engagement_multipliers = {
             'rarely': 0.33,   # 1/3 of frequent engagement
             'often': 0.67,    # 2/3 of frequent engagement
-            'frequently': 1.0  # Baseline is now at 'frequent' level
+            'frequently': 1.0  # Baseline
         }
         
-        # Calculate base prediction (already at 'frequent' baseline)
-        base_prediction = base_annual_per_client_frequent * num_clients * engagement_multipliers[engagement_level]
+        # Base calculation per client
+        per_client = base_amount * engagement_multipliers[engagement_level]
         
-        # Adjust for company types
+        # Apply company type adjustment to per-client amount
         if len(company_types) == 2:  # Both startups and SMEs
-            startup_prediction = base_prediction * 0.5  # 50% startups
-            sme_prediction = base_prediction * 0.5 * 0.7  # 50% SMEs with 30% less savings
-            total_prediction = startup_prediction + sme_prediction
+            per_client *= 0.85  # Average of 100% and 70%
         elif 'sme' in company_types:
-            total_prediction = base_prediction * 0.7  # SMEs make 30% less
-        else:  # startups only
-            total_prediction = base_prediction
+            per_client *= 0.7  # SMEs make 30% less
         
-        # Add a scaling factor that reduces the per-client savings as the number of clients increases
-        # This reflects that it's harder to maintain the same level of engagement with more clients
-        scaling_factor = 1.0 / (1 + np.log10(num_clients / 1000))
-        total_prediction *= scaling_factor
+        # Calculate total savings
+        total = per_client * num_clients
         
         return {
-            'total_annual_savings': round(total_prediction, 2),
-            'avg_savings_per_company': round(total_prediction / num_clients, 2),
-            'monthly_savings': round(total_prediction / 12, 2)
+            'total_annual_savings': total,
+            'avg_savings_per_company': per_client,  # This is per company and won't change with num_clients
+            'monthly_savings': total / 12
         }
     
     def get_top_offers(self, num_clients, company_types, engagement_level):
