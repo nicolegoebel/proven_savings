@@ -73,8 +73,8 @@ with st.sidebar:
     
     # Company Types
     st.subheader("Company Types")
-    startup_checkbox = st.checkbox("Startups", value=True)
-    sme_checkbox = st.checkbox("SMEs", value=False)
+    startup_checkbox = st.checkbox("Startups", value=True, help="Startups generate 100% of base savings")
+    sme_checkbox = st.checkbox("SMEs", value=False, help="SMEs generate 70% of startup savings. When combined with startups, they add 30% to the total.")
     
     # Engagement Level
     engagement_level = st.selectbox(
@@ -132,8 +132,15 @@ if predict_button:
                 company_types=["startup"],
                 engagement_level=engagement_level
             )
+            # Convert engagement level to descriptive text
+            engagement_desc = {
+                'rarely': 'a low',
+                'often': 'a medium',
+                'frequently': 'a high'
+            }[engagement_level]
+            
             st.info(
-                f"**Startups:** With {num_clients:,} clients at {engagement_level} engagement level, "
+                f"**Startups:** With {num_clients:,} clients at {engagement_desc} engagement level, "
                 f"expect {format_number(startup_pred['total_annual_savings'])} in annual savings."
             )
         
@@ -144,8 +151,15 @@ if predict_button:
                 company_types=["sme"],
                 engagement_level=engagement_level
             )
+            # Convert engagement level to descriptive text
+            engagement_desc = {
+                'rarely': 'a low',
+                'often': 'a medium',
+                'frequently': 'a high'
+            }[engagement_level]
+            
             st.warning(
-                f"**SMEs:** With {num_clients:,} clients at {engagement_level} engagement level, "
+                f"**SMEs:** With {num_clients:,} clients at {engagement_desc} engagement level, "
                 f"expect {format_number(sme_pred['total_annual_savings'])} in annual savings."
             )
         

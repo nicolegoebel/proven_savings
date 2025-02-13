@@ -105,21 +105,24 @@ class BankSavingsAnalyzer:
             'frequently': 1.0  # Baseline
         }
         
-        # Base calculation per client
-        per_client = base_amount * engagement_multipliers[engagement_level]
+        # Base calculation per client at given engagement level
+        base_per_client = base_amount * engagement_multipliers[engagement_level]
         
-        # Apply company type adjustment to per-client amount
+        # Calculate total based on company types
         if len(company_types) == 2:  # Both startups and SMEs
-            per_client *= 0.85  # Average of 100% and 70%
-        elif 'sme' in company_types:
-            per_client *= 0.7  # SMEs make 30% less
-        
-        # Calculate total savings
-        total = per_client * num_clients
+            # All clients are startups, then add 30% more for SMEs
+            startup_total = base_per_client * num_clients
+            sme_additional = startup_total * 0.3  # Additional 30% from SMEs
+            total = startup_total + sme_additional
+        elif 'sme' in company_types:  # SMEs only
+            # All clients are SMEs (70% of startup savings)
+            total = base_per_client * num_clients * 0.7
+        else:  # Startups only
+            # All clients are startups (100%)
+            total = base_per_client * num_clients
         
         return {
             'total_annual_savings': total,
-            'avg_savings_per_company': per_client,  # This is per company and won't change with num_clients
             'monthly_savings': total / 12
         }
     
