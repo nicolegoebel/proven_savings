@@ -35,26 +35,28 @@ st.title("Potential Bank Savings with Proven")
 with st.sidebar:
     st.header("Prediction Parameters")
     
-    # Number of Clients selection
-    client_range = st.radio(
-        "Client Range",
+    # Startup Clients Selection
+    st.subheader("Startup Clients")
+    startup_range = st.radio(
+        "Startup Client Range",
         options=["Small (1-100)", "Medium (100-10K)", "Large (10K-2M)"],
-        index=0
+        index=0,
+        key="startup_range"
     )
     
-    # Adjust slider based on selected range
-    if client_range == "Small (1-100)":
-        num_clients = st.slider(
-            "Number of Clients",
-            min_value=1,
+    # Adjust startup slider based on selected range
+    if startup_range == "Small (1-100)":
+        num_startup_clients = st.slider(
+            "Number of Startup Clients",
+            min_value=0,
             max_value=100,
             value=10,
             step=1,
             format="%d"
         )
-    elif client_range == "Medium (100-10K)":
-        num_clients = st.slider(
-            "Number of Clients",
+    elif startup_range == "Medium (100-10K)":
+        num_startup_clients = st.slider(
+            "Number of Startup Clients",
             min_value=100,
             max_value=10000,
             value=1000,
@@ -62,8 +64,8 @@ with st.sidebar:
             format="%d"
         )
     else:  # Large range
-        num_clients = st.slider(
-            "Number of Clients",
+        num_startup_clients = st.slider(
+            "Number of Startup Clients",
             min_value=10000,
             max_value=2000000,
             value=100000,
@@ -71,162 +73,164 @@ with st.sidebar:
             format="%d"
         )
     
-    # Company Types
-    st.subheader("Company Types")
-    startup_checkbox = st.checkbox("Startups", value=True, help="Startups generate 100% of base savings")
-    sme_checkbox = st.checkbox("SMEs", value=False, help="SMEs generate 70% of startup savings. When combined with startups, they add 30% to the total.")
+    # SME Clients Selection
+    st.subheader("SME Clients")
+    sme_range = st.radio(
+        "SME Client Range",
+        options=["Small (1-100)", "Medium (100-10K)", "Large (10K-2M)"],
+        index=0,
+        key="sme_range"
+    )
+    
+    # Adjust SME slider based on selected range
+    if sme_range == "Small (1-100)":
+        num_sme_clients = st.slider(
+            "Number of SME Clients",
+            min_value=0,
+            max_value=100,
+            value=10,
+            step=1,
+            format="%d"
+        )
+    elif sme_range == "Medium (100-10K)":
+        num_sme_clients = st.slider(
+            "Number of SME Clients",
+            min_value=100,
+            max_value=10000,
+            value=1000,
+            step=100,
+            format="%d"
+        )
+    else:  # Large range
+        num_sme_clients = st.slider(
+            "Number of SME Clients",
+            min_value=10000,
+            max_value=2000000,
+            value=100000,
+            step=10000,
+            format="%d"
+        )
     
     # Engagement Level
-    engagement_level = st.selectbox(
+    engagement_level_map = {
+        "Low": "rarely",
+        "Medium": "often",
+        "High": "frequently"
+    }
+    
+    engagement_ui = st.selectbox(
         "Engagement Level",
-        options=["rarely", "often", "frequently"],
+        options=["Low", "Medium", "High"],
         index=0
     )
+    engagement_level = engagement_level_map[engagement_ui]
     
     # Create predict button
     predict_button = st.button("Predict Savings")
 
 # Main content
 if predict_button:
-    # Prepare company types list
-    company_types = []
-    if startup_checkbox:
-        company_types.append("startup")
-    if sme_checkbox:
-        company_types.append("sme")
-    
-    if not company_types:
-        st.error("Please select at least one company type.")
-    else:
-        # Get predictions
-        annual_savings = analyzer.predict_annual_savings(
-            num_clients=num_clients,
-            company_types=company_types,
+    # Get predictions for startups if any
+    startup_pred = None
+    if num_startup_clients > 0:
+        startup_pred = analyzer.predict_annual_savings(
+            num_clients=num_startup_clients,
+            company_types=["startup"],
             engagement_level=engagement_level
         )
-        
-        # Display savings metrics
-        st.header("Potential Savings")
-        col1, col2 = st.columns(2)
-        
-        with col1:
+    
+    # Get predictions for SMEs if any
+    sme_pred = None
+    if num_sme_clients > 0:
+        sme_pred = analyzer.predict_annual_savings(
+            num_clients=num_sme_clients,
+            company_types=["sme"],
+            engagement_level=engagement_level
+        )
+    
+    # Get combined predictions if both types have clients
+    combined_pred = None
+    if num_startup_clients > 0 and num_sme_clients > 0:
+        combined_pred = analyzer.predict_annual_savings(
+            num_clients=num_startup_clients + num_sme_clients,
+            company_types=["startup", "sme"],
+            engagement_level=engagement_level
+        )
+    
+    # Display savings metrics
+    st.header("Potential Savings")
+    
+    # Create three columns for displaying metrics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if startup_pred:
             st.metric(
-                "Total Annual Savings",
-                format_number(annual_savings['total_annual_savings'])
+                "Startup Annual Savings",
+                format_number(startup_pred['total_annual_savings'])
             )
-        
-        with col2:
+    
+    with col2:
+        if sme_pred:
             st.metric(
-                "Total Monthly Savings",
-                format_number(annual_savings['total_annual_savings'] / 12)
+                "SME Annual Savings",
+                format_number(sme_pred['total_annual_savings'])
             )
-        
-        # Insights Section
-        st.header("Key Insights")
-        
-        # Calculate insights for each company type
-        if "startup" in company_types and "sme" not in company_types:
-            # Get startup-only predictions
-            startup_pred = analyzer.predict_annual_savings(
-                num_clients=num_clients,
-                company_types=["startup"],
-                engagement_level=engagement_level
+    
+    with col3:
+        if combined_pred:
+            st.metric(
+                "Combined Annual Savings",
+                format_number(combined_pred['total_annual_savings'])
             )
-            # Convert engagement level to descriptive text
-            engagement_desc = {
-                'rarely': 'a low',
-                'often': 'a medium',
-                'frequently': 'a high'
-            }[engagement_level]
-            
-            st.info(
-                f"**Startups:** With {num_clients:,} clients at {engagement_desc} engagement level, "
-                f"expect {format_number(startup_pred['total_annual_savings'])} in annual savings."
-            )
+    
+    # Insights Section
+    st.header("Key Insights")
+    
+    # Convert engagement level to descriptive text
+    engagement_desc = {
+        'rarely': 'a low',
+        'often': 'a medium',
+        'frequently': 'a high'
+    }[engagement_level]  # Keep internal mapping as is
+    
+    # Display startup insights if any
+    if startup_pred:
+        annual = startup_pred['total_annual_savings']
+        monthly = startup_pred['monthly_savings']
+        weekly = monthly / 4.33  # Average number of weeks in a month
         
-        if "sme" in company_types and "startup" not in company_types:
-            # Get SME-only predictions
-            sme_pred = analyzer.predict_annual_savings(
-                num_clients=num_clients,
-                company_types=["sme"],
-                engagement_level=engagement_level
-            )
-            # Convert engagement level to descriptive text
-            engagement_desc = {
-                'rarely': 'a low',
-                'often': 'a medium',
-                'frequently': 'a high'
-            }[engagement_level]
-            
-            st.warning(
-                f"**SMEs:** With {num_clients:,} clients at {engagement_desc} engagement level, "
-                f"expect {format_number(sme_pred['total_annual_savings'])} in annual savings."
-            )
+        st.info(
+            f"**Startups:** With {num_startup_clients:,} clients at {engagement_desc} engagement level:\n"
+            f"- Annual Savings: {format_number(annual)}\n"
+            f"- Monthly Savings: {format_number(monthly)}"
+        )
+    
+    # Display SME insights if any
+    if sme_pred:
+        annual = sme_pred['total_annual_savings']
+        monthly = sme_pred['monthly_savings']
+        weekly = monthly / 4.33  # Average number of weeks in a month
         
-        if len(company_types) == 2:
-            # Mixed portfolio predictions were already calculated in annual_savings
-            st.success(
-                f"**Mixed Portfolio:** With {num_clients:,} total clients at {engagement_level} engagement level, "
-                f"expect an average of {format_number(annual_savings['total_annual_savings'])} in annual savings."
-            )
+        st.warning(
+            f"**SMEs:** With {num_sme_clients:,} clients at {engagement_desc} engagement level:\n"
+            f"- Annual Savings: {format_number(annual)}\n"
+            f"- Monthly Savings: {format_number(monthly)}"
+        )
+    
+    # Display combined insights if both types have clients
+    if combined_pred:
+        total_clients = num_startup_clients + num_sme_clients
+        annual = combined_pred['total_annual_savings']
+        monthly = combined_pred['monthly_savings']
+        weekly = monthly / 4.33  # Average number of weeks in a month
         
-        # Display Savings Projections Section
-        st.header("Savings Projections")
-        
-        # Create dynamic plot for selected number of clients
-        st.subheader("Projected Growth in Annual Savings")
-        
-        # Create plot points for current and doubled clients
-        client_points = np.array([num_clients, num_clients * 2])
-        
-        # Create plot
-        fig = plt.figure(figsize=(12, 6))
-        
-        # Colors for different engagement levels
-        colors = {'Frequently': '#4BC0C0', 'Often': '#FF9F40', 'Rarely': '#FF6384'}
-        multipliers = {'Frequently': 1.5, 'Often': 1.0, 'Rarely': 0.5}
-        
-        # Plot savings based on company types and engagement levels
-        for level in ['rarely', 'often', 'frequently']:
-            # Get predictions for current and doubled clients
-            current_pred = analyzer.predict_annual_savings(
-                num_clients=num_clients,
-                company_types=company_types,
-                engagement_level=level
-            )['total_annual_savings']
-            
-            doubled_pred = analyzer.predict_annual_savings(
-                num_clients=num_clients * 2,
-                company_types=company_types,
-                engagement_level=level
-            )['total_annual_savings']
-            
-            # Plot the predictions
-            savings = [current_pred, doubled_pred]
-            plt.plot(client_points, savings,
-                     label=f'{level.capitalize()}',
-                     color=colors[level.capitalize()],
-                     linestyle='-' if level == engagement_level else '--',
-                     linewidth=3 if level == engagement_level else 1)
-            
-            if level == engagement_level:
-                plt.scatter(client_points, savings, color=colors[level.capitalize()], s=100)
-        
-        plt.title('Projected Annual Savings Growth\n(Current vs Double Clients)', fontsize=14, pad=20)
-        plt.xlim(num_clients * 0.9, num_clients * 2.1)  # Set x-axis with some padding
-        plt.xlabel('Number of Clients', fontsize=12)
-        plt.ylabel('Annual Savings ($)', fontsize=12)
-        plt.grid(True, alpha=0.3)
-        plt.legend(loc='upper left', fontsize=10)
-        
-        # Format axes
-        ax = plt.gca()
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${int(x):,}'))
-        
-        # Show plot
-        st.pyplot(fig)
-        plt.close()
-        
+        st.success(
+            f"**Combined Portfolio:** With {total_clients:,} total clients at {engagement_desc} engagement level:\n"
+            f"- Annual Savings: {format_number(annual)}\n"
+            f"- Monthly Savings: {format_number(monthly)}"
+        )
+
+
 
         

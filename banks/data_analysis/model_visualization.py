@@ -433,8 +433,90 @@ class SavingsModelVisualizer:
         plt.savefig(self.static_dir / 'company_distribution.png', bbox_inches='tight', dpi=300)
         plt.close()
     
+    def create_linear_zoomed_plot(self):
+        """Create a linear plot focusing on 0-100 clients"""
+        from .bank_stats import BankSavingsAnalyzer
+        
+        # Initialize analyzer
+        analyzer = BankSavingsAnalyzer(self.data_dir)
+        
+        # Create data points
+        num_clients_range = np.linspace(1, 100, 100)
+        
+        # Calculate savings for different scenarios
+        startup_savings = []
+        sme_savings = []
+        mixed_savings = []
+        
+        for num_clients in num_clients_range:
+            # Startups only
+            startup_result = analyzer.predict_annual_savings(
+                num_clients=num_clients,
+                company_types=["startup"],
+                engagement_level="frequently"
+            )
+            startup_savings.append(startup_result['total_annual_savings'])
+            
+            # SMEs only
+            sme_result = analyzer.predict_annual_savings(
+                num_clients=num_clients,
+                company_types=["sme"],
+                engagement_level="frequently"
+            )
+            sme_savings.append(sme_result['total_annual_savings'])
+            
+            # Mixed (both types)
+            mixed_result = analyzer.predict_annual_savings(
+                num_clients=num_clients,
+                company_types=["startup", "sme"],
+                engagement_level="frequently"
+            )
+            mixed_savings.append(mixed_result['total_annual_savings'])
+        
+        # Get actual data points
+        # SVB data - calculate average savings per company
+        svb_companies = len(self.svb_data['company'].unique())
+        svb_total_savings = self.svb_data['savings_amount'].sum() * 12  # Annualized
+        svb_savings_per_company = svb_total_savings / svb_companies
+        
+        # Calculate SVB trend line
+        svb_trend = [i * svb_savings_per_company for i in num_clients_range]
+        
+        # JPM data
+        jpm_companies = len(self.jpm_data['company'].unique())
+        jpm_savings = self.jpm_data['savings_amount'].sum() * 12  # Annualized
+        
+        # Create linear plot
+        plt.figure(figsize=(12, 6))
+        plt.plot(num_clients_range, startup_savings, label='Startups Only', color='#2ecc71', linewidth=2)
+        plt.plot(num_clients_range, sme_savings, label='SMEs Only', color='#e74c3c', linewidth=2)
+        plt.plot(num_clients_range, mixed_savings, label='Mixed Client Types', color='#3498db', linewidth=2)
+        plt.plot(num_clients_range, svb_trend, label='SVB Actual Trend', color='purple', linewidth=2, linestyle='--')
+        
+        # Add actual data points if they fall within the range
+        if svb_companies <= 100:
+            plt.scatter([svb_companies], [svb_total_savings], color='purple', s=100, zorder=5,
+                       label=f'SVB Actual ({svb_companies} clients)')
+        if jpm_companies <= 100:
+            plt.scatter([jpm_companies], [jpm_savings], color='red', s=100, zorder=5,
+                       label=f'JPM Actual ({jpm_companies} clients)')
+        
+        plt.title('Annual Savings vs Number of Clients (0-100 Range)', fontsize=14)
+        plt.xlabel('Number of Clients', fontsize=12)
+        plt.ylabel('Annual Savings ($)', fontsize=12)
+        
+        # Format y-axis to show dollars
+        ax = plt.gca()
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend(loc='upper left', fontsize=10)
+        
+        # Save plot
+        plt.savefig(self.static_dir / 'savings_vs_clients_zoomed_linear.png', bbox_inches='tight', dpi=300)
+        plt.close()
+    
     def generate_all_visualizations(self):
         """Generate necessary visualizations"""
-        # We only need to generate the prediction surface
-        # as that's the only plot we're using in the app
         self.generate_prediction_surface()
+        self.create_linear_zoomed_plot()
