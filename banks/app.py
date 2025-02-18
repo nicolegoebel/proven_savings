@@ -15,14 +15,20 @@ analyzer = BankSavingsAnalyzer(data_dir)
 
 def format_number(num):
     """Format numbers with appropriate units (K, M, B) and minimal decimal places."""
-    if abs(num) >= 1e9:
-        return f"${num/1e9:.1f}B"
-    elif abs(num) >= 1e6:
-        return f"${num/1e6:.1f}M"
-    elif abs(num) >= 1e3:
-        return f"${num/1e3:.1f}K"
-    else:
-        return f"${num:.0f}"
+    try:
+        # Convert to float if it's a string or numpy type
+        num = float(num)
+        if abs(num) >= 1e9:
+            return f"${num/1e9:.1f}B"
+        elif abs(num) >= 1e6:
+            return f"${num/1e6:.1f}M"
+        elif abs(num) >= 1e3:
+            return f"${num/1e3:.1f}K"
+        else:
+            return f"${num:.0f}"
+    except (TypeError, ValueError) as e:
+        logger.error(f"Error formatting number: {num}, type: {type(num)}")
+        return "$0"  # Return a safe default
 
 @app.route('/')
 def index():
@@ -91,9 +97,10 @@ def predict():
             )
             
             # Format top offers for display
+            logger.debug(f"Top offers data: {top_offers.dtypes}")
             predictions['top_offers'] = [{
-                'name': offer['offer_name'],
-                'savings': format_number(offer['avg_savings']),
+                'name': str(offer['offer_name']),
+                'savings': format_number(float(offer['avg_savings'])),
                 'companies': int(offer['unique_companies']),
                 'usage_count': int(offer['usage_count'])
             } for offer in top_offers.to_dict('records')]
