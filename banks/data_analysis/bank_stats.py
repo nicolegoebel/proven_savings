@@ -95,14 +95,14 @@ class BankSavingsAnalyzer:
         engagement_level : str
             One of 'rarely', 'often', 'frequently'
         """
-        # Base amount per client per year
-        base_amount = 240  # $240 per client per year at frequent engagement
+        # Base amount per client per year (calculated from SVB's actual data: $7.4M / 41,438 clients)
+        base_amount = 178.58  # Base amount per client per year at SVB's engagement level
         
         # Engagement level multipliers
         engagement_multipliers = {
-            'rarely': 0.33,   # 1/3 of frequent engagement
-            'often': 0.67,    # 2/3 of frequent engagement
-            'frequently': 1.0  # Baseline
+            'rarely': 1.0,     # SVB baseline engagement level
+            'often': 1.03,    # JPM engagement level (+3%)
+            'frequently': 1.05  # Projected high engagement level (+5%)
         }
         
         # Base calculation per client at given engagement level
@@ -152,13 +152,13 @@ class BankSavingsAnalyzer:
         
         # Engagement level multipliers
         engagement_multipliers = {
-            'rarely': 0.5,
-            'often': 1.0,  # SVB level
-            'frequently': 1.5  # JPM level
+            'rarely': 1.0,     # SVB baseline
+            'often': 1.03,    # JPM level (+3%)
+            'frequently': 1.05  # Projected high engagement (+5%)
         }
         
-        # Calculate base multiplier from number of clients (assuming current data is based on average of 10,000 clients)
-        client_multiplier = num_clients / 10000
+        # Calculate base multiplier from number of clients (SVB baseline: 41,438 clients)
+        client_multiplier = num_clients / 41438  # Scale relative to SVB's client base
         
         # Apply client and engagement multipliers
         offer_stats['avg_savings'] *= client_multiplier * engagement_multipliers[engagement_level]
