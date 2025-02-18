@@ -129,26 +129,7 @@
                 </div>
             </div>
             
-            <!-- Top Offers -->
-            <div class="card mt-4">
-                <div class="card-body">
-                    <h5 class="card-title">Top Offers</h5>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Offer</th>
-                                    <th>Average Savings</th>
-                                    <th>Companies Using</th>
-                                    <th>Usage Count</th>
-                                </tr>
-                            </thead>
-                            <tbody id="top-offers">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </div>
 
@@ -240,23 +221,6 @@
                     }
                     
                     document.getElementById('total-savings').textContent = result.predictions.total.formatted_savings;
-                    
-                    // Update top offers table
-                    const topOffersBody = document.getElementById('top-offers');
-                    topOffersBody.innerHTML = '';
-                    
-                    if (result.predictions.top_offers) {
-                        result.predictions.top_offers.forEach(offer => {
-                            topOffersBody.innerHTML += `
-                                <tr>
-                                    <td>${offer.name}</td>
-                                    <td>${offer.savings}</td>
-                                    <td>${offer.companies}</td>
-                                    <td>${offer.usage_count}</td>
-                                </tr>
-                            `;
-                        });
-                    }
                 } else {
                     alert('Error: ' + result.error);
                 }
