@@ -86,9 +86,12 @@
             <h5>
                 <span data-bs-toggle="tooltip" 
                       data-bs-placement="right" 
-                      title="Low: Contacting companies once per year
-Medium: Contacting companies quarterly
-High: Contacting companies monthly">
+                      data-bs-html="true"
+                      title="<ul class='mb-0 ps-3'>
+<li>Low: Contacting companies once per year</li>
+<li>Medium: Contacting companies quarterly</li>
+<li>High: Contacting companies monthly</li>
+</ul>">
                     Engagement Level <i class="bi bi-info-circle"></i>
                 </span>
             </h5>
@@ -149,7 +152,7 @@ High: Contacting companies monthly">
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl, {
                 html: true,
-                template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner text-start" style="white-space: pre-line;"></div></div>'
+                template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner text-start"></div></div>'
             })
         })
 
