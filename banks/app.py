@@ -92,11 +92,11 @@ def predict():
             
             # Format top offers for display
             predictions['top_offers'] = [{
-                'name': offer['Name of offer'],
+                'name': offer['offer_name'],
                 'savings': format_number(offer['avg_savings']),
                 'companies': int(offer['unique_companies']),
                 'usage_count': int(offer['usage_count'])
-            } for offer in top_offers]
+            } for offer in top_offers.to_dict('records')]
         
         return jsonify({
             'success': True,

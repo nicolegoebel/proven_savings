@@ -184,9 +184,9 @@ class BankSavingsAnalyzer:
             np.log1p(offer_stats['unique_companies'])
         )
         
-        # Get top 10 offers
+        # Get top 10 offers with all needed columns
         top_offers = offer_stats.nlargest(10, 'score')[[
-            'offer_name', 'avg_savings'
+            'offer_name', 'avg_savings', 'usage_count', 'unique_companies'
         ]].round(2)
         
         # Calculate percentage of total savings, handling NaN values
