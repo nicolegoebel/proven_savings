@@ -224,18 +224,18 @@
         let engagementComparisonChart = null;
         
         function calculateSavings(clients, type, engagement) {
-            const baseMultiplier = 1000;
+            const baseAmount = 178.58; // Base amount per client per year at SVB's engagement level
             const engagementMultipliers = {
-                frequently: 1.5,
-                often: 1.0,
-                rarely: 0.5
+                rarely: 1.0,     // SVB baseline engagement level
+                often: 1.03,    // JPM engagement level (+3%)
+                frequently: 1.05  // Projected high engagement level (+5%)
             };
             
             let typeMultiplier = 1;
             if (type === 'sme') typeMultiplier = 0.7;
             else if (type === 'both') typeMultiplier = 0.85;
             
-            const result = clients * baseMultiplier * engagementMultipliers[engagement] * typeMultiplier;
+            const result = clients * baseAmount * engagementMultipliers[engagement] * typeMultiplier;
             return isNaN(result) ? 0 : result;
         }
 
