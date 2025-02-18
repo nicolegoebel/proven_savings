@@ -58,10 +58,10 @@ def predict():
             )
             predictions['startup'] = {
                 'clients': num_startup_clients,
-                'savings': startup_pred,
-                'formatted_savings': format_number(startup_pred)
+                'savings': startup_pred['total_annual_savings'],
+                'formatted_savings': format_number(startup_pred['total_annual_savings'])
             }
-            total_savings += startup_pred
+            total_savings += startup_pred['total_annual_savings']
             
         if num_sme_clients > 0:
             sme_pred = analyzer.predict_annual_savings(
@@ -71,10 +71,10 @@ def predict():
             )
             predictions['sme'] = {
                 'clients': num_sme_clients,
-                'savings': sme_pred,
-                'formatted_savings': format_number(sme_pred)
+                'savings': sme_pred['total_annual_savings'],
+                'formatted_savings': format_number(sme_pred['total_annual_savings'])
             }
-            total_savings += sme_pred
+            total_savings += sme_pred['total_annual_savings']
             
         predictions['total'] = {
             'savings': total_savings,
