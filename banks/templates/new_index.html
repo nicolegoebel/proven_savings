@@ -83,21 +83,22 @@
         
         <!-- Engagement Level -->
         <div class="mb-4">
-            <h5>
-                <span data-bs-toggle="tooltip" 
-                      data-bs-placement="right" 
-                      data-bs-html="true"
-                      title="<ul class='mb-0 ps-3'>
-<li>Low: Contacting companies once per year</li>
-<li>Medium: Contacting companies quarterly</li>
-<li>High: Contacting companies monthly</li>
-</ul>">
-                    Engagement Level <i class="bi bi-info-circle"></i>
-                </span>
-            </h5>
-            <button class="btn btn-outline-primary engagement-btn selected" data-level="rarely">Low</button>
-            <button class="btn btn-outline-primary engagement-btn" data-level="often">Medium</button>
-            <button class="btn btn-outline-primary engagement-btn" data-level="frequently">High</button>
+            <h5>Engagement Level</h5>
+            <button class="btn btn-outline-primary engagement-btn selected" 
+                    data-level="rarely"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    title="Contacting companies once per year">Low</button>
+            <button class="btn btn-outline-primary engagement-btn" 
+                    data-level="often"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    title="Contacting companies quarterly">Medium</button>
+            <button class="btn btn-outline-primary engagement-btn" 
+                    data-level="frequently"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    title="Contacting companies monthly">High</button>
         </div>
         
         <button class="btn btn-primary w-100" id="predict-btn">Predict Savings</button>
