@@ -13,6 +13,12 @@
             left: 0;
             top: 0;
             width: 300px;
+            overflow-y: auto; /* Make sidebar scrollable */
+        }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
         .main-content {
             margin-left: 320px;
@@ -41,20 +47,19 @@
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
-        <h4>Prediction Parameters</h4>
         
         <!-- Startup Clients -->
         <div class="mb-4">
-            <h5>Startup Clients</h5>
+            <h5>How many startup clients do you have?</h5>
             <div class="btn-group-vertical w-100" role="group">
                 <input type="radio" class="btn-check" name="startup-range" id="startup-small" checked>
-                <label class="btn btn-outline-primary" for="startup-small">Small (0-100)</label>
+                <label class="btn btn-outline-primary" for="startup-small">0-100</label>
                 
                 <input type="radio" class="btn-check" name="startup-range" id="startup-medium">
-                <label class="btn btn-outline-primary" for="startup-medium">Medium (100-10K)</label>
+                <label class="btn btn-outline-primary" for="startup-medium">100-10K</label>
                 
                 <input type="radio" class="btn-check" name="startup-range" id="startup-large">
-                <label class="btn btn-outline-primary" for="startup-large">Large (10K-2M)</label>
+                <label class="btn btn-outline-primary" for="startup-large">10K-2M</label>
             </div>
             
             <label class="range-label">Number of Startup Clients</label>
@@ -64,16 +69,16 @@
         
         <!-- SME Clients -->
         <div class="mb-4">
-            <h5>SME Clients</h5>
+            <h5>How many SME clients do you have?</h5>
             <div class="btn-group-vertical w-100" role="group">
                 <input type="radio" class="btn-check" name="sme-range" id="sme-small" checked>
-                <label class="btn btn-outline-primary" for="sme-small">Small (0-100)</label>
+                <label class="btn btn-outline-primary" for="sme-small">0-100</label>
                 
                 <input type="radio" class="btn-check" name="sme-range" id="sme-medium">
-                <label class="btn btn-outline-primary" for="sme-medium">Medium (100-10K)</label>
+                <label class="btn btn-outline-primary" for="sme-medium">100-10K</label>
                 
                 <input type="radio" class="btn-check" name="sme-range" id="sme-large">
-                <label class="btn btn-outline-primary" for="sme-large">Large (10K-2M)</label>
+                <label class="btn btn-outline-primary" for="sme-large">10K-2M</label>
             </div>
             
             <label class="range-label">Number of SME Clients</label>
@@ -83,7 +88,7 @@
         
         <!-- Engagement Level -->
         <div class="mb-4">
-            <h5>Engagement Level</h5>
+            <h5>How often are you connecting with your clients?</h5>
             <button class="btn btn-outline-primary engagement-btn selected" 
                     data-level="rarely"
                     data-bs-toggle="tooltip"
@@ -101,7 +106,7 @@
                     title="Contacting companies monthly">High</button>
         </div>
         
-        <button class="btn btn-primary w-100" id="predict-btn">Predict Savings</button>
+
     </div>
 
     <!-- Main Content -->
@@ -109,7 +114,7 @@
         <h1>Potential Bank Savings with Proven</h1>
         
         <!-- Predictions -->
-        <div id="predictions" class="hidden">
+        <div id="predictions">
             <div class="row">
                 <!-- Startup Predictions -->
                 <div class="col-md-4">
@@ -141,115 +146,251 @@
                     </div>
                 </div>
             </div>
-            
 
+            <!-- Startup Insights -->
+            <div class="row mt-4" id="startupInsights">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4>Startup Savings</h4>
+                            <p>For Banks with <span id="startupClientCount">0</span> clients:</p>
+                            <ul>
+                                <li>Total annual savings potential: <span id="startupAnnualSavings">$0</span></li>
+                                <li>At <span id="startupEngagementLevel">low</span> engagement, historical data estimates that approximately <span id="startupEngagedClients">0</span> clients would tap into these savings*</li>
+                                <li>Average savings per active client: <span id="startupActiveClientSavings">$0</span></li>
+                            </ul>
+                            <h5>Typical savings categories:</h5>
+                            <ul>
+                                <li>Cloud Hosting & Infrastructure – AWS, Google Cloud, Azure, DigitalOcean</li>
+                                <li>Productivity & Collaboration – Slack, Notion, Asana, Google Workspace</li>
+                                <li>Software Development & DevOps – GitHub, GitLab, Jira, Docker, Datadog</li>
+                                <li>Customer Support & Engagement – Zendesk, Intercom, Drift, HubSpot</li>
+                                <li>Sales & Marketing Automation – Salesforce, HubSpot, Mailchimp, Marketo</li>
+                                <li>Finance & Payments – Stripe, QuickBooks, Expensify, Brex</li>
+                                <li>Analytics & Data Tools – Google Analytics, Mixpanel, Segment, Looker</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SME Insights -->
+            <div class="row mt-4" id="smeInsights">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4>SME Savings</h4>
+                            <p>For Banks with <span id="smeClientCount">0</span> clients:</p>
+                            <ul>
+                                <li>Total annual savings potential: <span id="smeAnnualSavings">$0</span></li>
+                                <li>At <span id="smeEngagementLevel">low</span> engagement, historical data estimates that approximately <span id="smeEngagedClients">0</span> clients would tap into these savings*</li>
+                                <li>Average savings per active client: <span id="smeActiveClientSavings">$0</span></li>
+                            </ul>
+                            <h5>Typical savings categories:</h5>
+                            <ul>
+                                <li>Point-of-Sale (POS) & Payment Processing – Square, Clover, Shopify POS, Stripe Terminal</li>
+                                <li>Inventory Management & Supply Chain – Lightspeed, TradeGecko, Unleashed</li>
+                                <li>Customer Relationship Management (CRM) – HubSpot, Zoho CRM, Pipedrive</li>
+                                <li>Accounting & Payroll – QuickBooks, Xero, ADP, Gusto</li>
+                                <li>Marketing & Social Media – Facebook Business Suite, Google Ads, Mailchimp, Hootsuite</li>
+                                <li>E-commerce & Online Presence – Shopify, Wix, WooCommerce, WordPress</li>
+                                <li>Security & Compliance – CCTV, alarm systems, cybersecurity tools like Norton, compliance software</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculation Note -->
+            <div class="row mt-4 mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-muted mb-0"><em>Note: Annual savings and savings per client are based on participation rates of 1% to 5% of the entire client population chosen. A higher engagement level will result in a higher percent of the client population tapping into deals.</em></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Note Section -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <p class="text-muted small">* Note: These estimates are based on historical data and actual results may vary depending on specific circumstances and implementation.</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl, {
-                html: true,
-                template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner text-start"></div></div>'
-            })
-        })
-
-        // Slider range configurations
+    document.addEventListener('DOMContentLoaded', function() {
+        // Range configurations
         const ranges = {
             small: { min: 0, max: 100 },
             medium: { min: 100, max: 10000 },
             large: { min: 10000, max: 2000000 }
         };
-        
-        // Update slider based on selected range
-        function updateSliderRange(type) {
-            const range = document.querySelector(`input[name="${type}-range"]:checked`).id.split('-')[1];
-            const slider = document.getElementById(`${type}-slider`);
-            const config = ranges[range];
-            
-            slider.min = config.min;
-            slider.max = config.max;
-            slider.value = config.min;
-            updateSliderValue(type);
+
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
         }
-        
-        // Update displayed slider value
-        function updateSliderValue(type) {
-            const slider = document.getElementById(`${type}-slider`);
-            const display = document.getElementById(`${type}-value`);
-            display.textContent = `${slider.value} clients`;
-        }
-        
-        // Initialize sliders
-        ['startup', 'sme'].forEach(type => {
-            // Range button listeners
-            document.querySelectorAll(`input[name="${type}-range"]`).forEach(radio => {
-                radio.addEventListener('change', () => updateSliderRange(type));
-            });
+
+        // Calculate savings
+        function calculateSavings(clients, type) {
+            const baseAmount = 17858; // Base amount per active client per year at lowest engagement
+            const typeMultiplier = type === 'sme' ? 0.7 : 1;
             
-            // Slider value listeners
-            const slider = document.getElementById(`${type}-slider`);
-            slider.addEventListener('input', () => updateSliderValue(type));
-            
-            // Initialize ranges
-            updateSliderRange(type);
-        });
-        
-        // Engagement level buttons
-        document.querySelectorAll('.engagement-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.engagement-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-            });
-        });
-        
-        // Prediction button
-        document.getElementById('predict-btn').addEventListener('click', async () => {
-            const data = {
-                num_startup_clients: parseInt(document.getElementById('startup-slider').value),
-                num_sme_clients: parseInt(document.getElementById('sme-slider').value),
-                engagement_level: document.querySelector('.engagement-btn.selected').dataset.level
+            // Calculate number of engaged clients and engagement multiplier
+            const engagementLevel = document.querySelector('.engagement-btn.selected')?.dataset.level || 'rarely';
+            const engagementConfig = {
+                rarely: { percent: 0.01, multiplier: 1.0 },     // 1% of clients, base savings
+                often: { percent: 0.03, multiplier: 1.03 },     // 3% of clients, 3% higher per client
+                frequently: { percent: 0.05, multiplier: 1.05 }  // 5% of clients, 5% higher per client
             };
             
-            try {
-                const response = await fetch('/predict', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
+            const config = engagementConfig[engagementLevel];
+            const engagedClients = Math.round(clients * config.percent);
+            
+            // Calculate savings per active client with engagement multiplier
+            const savingsPerActiveClient = baseAmount * typeMultiplier * config.multiplier;
+            
+            // Calculate total savings based on active clients
+            const totalSavings = engagedClients * savingsPerActiveClient;
+            
+            return {
+                totalSavings: totalSavings,
+                engagedClients: engagedClients,
+                savingsPerActiveClient: savingsPerActiveClient
+            };
+        }
+
+        // Update predictions
+        function updatePredictions() {
+            const startupClients = parseInt(document.getElementById('startup-slider').value) || 0;
+            const smeClients = parseInt(document.getElementById('sme-slider').value) || 0;
+            const engagementLevel = document.querySelector('.engagement-btn.selected')?.dataset.level || 'rarely';
+            
+            const engagementText = {
+                rarely: 'low',
+                often: 'medium',
+                frequently: 'high'
+            };
+            
+            // Calculate savings
+            const startupStats = calculateSavings(startupClients, 'startup');
+            const smeStats = calculateSavings(smeClients, 'sme');
+            const totalSavings = startupStats.totalSavings + smeStats.totalSavings;
+            
+            // Update main predictions
+            document.getElementById('startup-savings').textContent = formatCurrency(startupStats.totalSavings);
+            document.getElementById('sme-savings').textContent = formatCurrency(smeStats.totalSavings);
+            document.getElementById('total-savings').textContent = formatCurrency(totalSavings);
+            
+            // Update startup insights
+            if (startupClients > 0) {
+                document.getElementById('startupClientCount').textContent = startupClients.toLocaleString();
+                document.getElementById('startupEngagementLevel').textContent = engagementText[engagementLevel];
+                document.getElementById('startupEngagedClients').textContent = startupStats.engagedClients.toLocaleString();
+                document.getElementById('startupAnnualSavings').textContent = formatCurrency(startupStats.totalSavings);
+                document.getElementById('startupActiveClientSavings').textContent = formatCurrency(startupStats.savingsPerActiveClient);
+                document.getElementById('startupInsights').style.display = 'block';
+            } else {
+                document.getElementById('startupInsights').style.display = 'none';
+            }
+            
+            // Update SME insights
+            if (smeClients > 0) {
+                document.getElementById('smeClientCount').textContent = smeClients.toLocaleString();
+                document.getElementById('smeEngagementLevel').textContent = engagementText[engagementLevel];
+                document.getElementById('smeEngagedClients').textContent = smeStats.engagedClients.toLocaleString();
+                document.getElementById('smeAnnualSavings').textContent = formatCurrency(smeStats.totalSavings);
+                document.getElementById('smeActiveClientSavings').textContent = formatCurrency(smeStats.savingsPerActiveClient);
+                document.getElementById('smeInsights').style.display = 'block';
+            } else {
+                document.getElementById('smeInsights').style.display = 'none';
+            }
+            
+            // Show predictions
+            document.getElementById('predictions').classList.remove('hidden');
+        }
+
+        // Initialize sliders
+        function initializeSliders() {
+            ['startup', 'sme'].forEach(type => {
+                const slider = document.getElementById(`${type}-slider`);
+                const display = document.getElementById(`${type}-value`);
+                
+                // Update display when slider moves
+                slider.addEventListener('input', function() {
+                    const value = parseInt(this.value) || 0;
+                    display.textContent = `${value.toLocaleString()} clients`;
+                    updatePredictions();
                 });
                 
-                const result = await response.json();
+                // Handle range selection
+                document.querySelectorAll(`input[name="${type}-range"]`).forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const range = this.id.split('-')[1];
+                        const config = ranges[range];
+                        
+                        slider.min = config.min;
+                        slider.max = config.max;
+                        slider.value = config.min; // Start with minimum value for this range
+                        
+                        // Adjust step size based on range
+                        if (range === 'large') {
+                            slider.step = 100; // For 10K-2M range, use steps of 100
+                        } else {
+                            slider.step = Math.max(1, Math.floor((config.max - config.min) / 100));
+                        }
+                        
+                        display.textContent = `${config.min.toLocaleString()} clients`;
+                        updatePredictions();
+                    });
+                });
                 
-                if (result.success) {
-                    // Show predictions section
-                    document.getElementById('predictions').classList.remove('hidden');
-                    
-                    // Update savings displays
-                    if (result.predictions.startup) {
-                        document.getElementById('startup-savings').textContent = result.predictions.startup.formatted_savings;
-                    } else {
-                        document.getElementById('startup-savings').textContent = '-';
-                    }
-                    
-                    if (result.predictions.sme) {
-                        document.getElementById('sme-savings').textContent = result.predictions.sme.formatted_savings;
-                    } else {
-                        document.getElementById('sme-savings').textContent = '-';
-                    }
-                    
-                    document.getElementById('total-savings').textContent = result.predictions.total.formatted_savings;
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error making prediction: ' + error);
-            }
+                // Initialize with small range
+                slider.min = ranges.small.min;
+                slider.max = ranges.small.max;
+                slider.value = ranges.small.min;
+                slider.step = 1;
+                display.textContent = `${ranges.small.min.toLocaleString()} clients`;
+                updatePredictions(); // Trigger initial calculation
+            });
+        }
+
+        // Initialize engagement buttons
+        function initializeEngagementButtons() {
+            document.querySelectorAll('.engagement-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.engagement-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    updatePredictions();
+                });
+            });
+        }
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                html: true,
+                template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner text-start"></div></div>'
+            });
         });
+
+        // Initialize everything
+        initializeSliders();
+        initializeEngagementButtons();
+        updatePredictions();
+
+    }); // End of DOMContentLoaded
     </script>
 </body>
 </html>

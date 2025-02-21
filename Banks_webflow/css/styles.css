@@ -1,0 +1,44 @@
+.sidebar {
+    background-color: #f8f9fa;
+    padding: 20px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 300px;
+    overflow-y: auto;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.main-content {
+    margin-left: 320px;
+    padding: 20px;
+}
+
+.range-label {
+    display: block;
+    margin: 10px 0;
+}
+
+.prediction-card {
+    margin-bottom: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+.engagement-btn {
+    width: 100%;
+    margin: 5px 0;
+}
+
+.selected {
+    background-color: #0d6efd;
+    color: white;
+}
