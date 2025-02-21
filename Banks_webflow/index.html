@@ -7,72 +7,77 @@
     <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <!-- Startup Clients -->
-        <div class="mb-4">
-            <h5>How many startup clients do you have?</h5>
-            <div class="btn-group-vertical w-100" role="group">
-                <input type="radio" class="btn-check" name="startup-range" id="startup-small" checked>
-                <label class="btn btn-outline-primary" for="startup-small">0-100</label>
+    <div class="container">
+        <h1 class="text-center mb-4">Potential Bank Savings with Proven</h1>
+        
+        <!-- Input Section -->
+        <div class="input-section">
+            <!-- Startup Clients -->
+            <div class="mb-4">
+                <h5>How many startup clients do you have?</h5>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="startup-range" id="startup-small" checked>
+                    <label class="btn btn-outline-primary" for="startup-small">0-100</label>
+                    
+                    <input type="radio" class="btn-check" name="startup-range" id="startup-medium">
+                    <label class="btn btn-outline-primary" for="startup-medium">100-10K</label>
+                    
+                    <input type="radio" class="btn-check" name="startup-range" id="startup-large">
+                    <label class="btn btn-outline-primary" for="startup-large">10K-2M</label>
+                </div>
                 
-                <input type="radio" class="btn-check" name="startup-range" id="startup-medium">
-                <label class="btn btn-outline-primary" for="startup-medium">100-10K</label>
-                
-                <input type="radio" class="btn-check" name="startup-range" id="startup-large">
-                <label class="btn btn-outline-primary" for="startup-large">10K-2M</label>
+                <label class="range-label">Number of Startup Clients</label>
+                <input type="range" class="form-range" id="startup-slider" min="0" max="100" value="0">
+                <small class="text-muted" id="startup-value">0 clients</small>
             </div>
             
-            <label class="range-label">Number of Startup Clients</label>
-            <input type="range" class="form-range" id="startup-slider" min="0" max="100" value="0">
-            <small class="text-muted" id="startup-value">0 clients</small>
-        </div>
-        
-        <!-- SME Clients -->
-        <div class="mb-4">
-            <h5>How many SME clients do you have?</h5>
-            <div class="btn-group-vertical w-100" role="group">
-                <input type="radio" class="btn-check" name="sme-range" id="sme-small" checked>
-                <label class="btn btn-outline-primary" for="sme-small">0-100</label>
+            <!-- SME Clients -->
+            <div class="mb-4">
+                <h5>How many SME clients do you have?</h5>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="sme-range" id="sme-small" checked>
+                    <label class="btn btn-outline-primary" for="sme-small">0-100</label>
+                    
+                    <input type="radio" class="btn-check" name="sme-range" id="sme-medium">
+                    <label class="btn btn-outline-primary" for="sme-medium">100-10K</label>
+                    
+                    <input type="radio" class="btn-check" name="sme-range" id="sme-large">
+                    <label class="btn btn-outline-primary" for="sme-large">10K-2M</label>
+                </div>
                 
-                <input type="radio" class="btn-check" name="sme-range" id="sme-medium">
-                <label class="btn btn-outline-primary" for="sme-medium">100-10K</label>
-                
-                <input type="radio" class="btn-check" name="sme-range" id="sme-large">
-                <label class="btn btn-outline-primary" for="sme-large">10K-2M</label>
+                <label class="range-label">Number of SME Clients</label>
+                <input type="range" class="form-range" id="sme-slider" min="0" max="100" value="0">
+                <small class="text-muted" id="sme-value">0 clients</small>
             </div>
             
-            <label class="range-label">Number of SME Clients</label>
-            <input type="range" class="form-range" id="sme-slider" min="0" max="100" value="0">
-            <small class="text-muted" id="sme-value">0 clients</small>
+            <!-- Engagement Level -->
+            <div class="mb-4">
+                <h5>How often are you connecting with your clients?</h5>
+                <div class="text-center">
+                    <button class="btn btn-outline-primary engagement-btn selected" 
+                            data-level="rarely"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            title="Contacting companies once per year">Low</button>
+                    <button class="btn btn-outline-primary engagement-btn" 
+                            data-level="often"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            title="Contacting companies quarterly">Medium</button>
+                    <button class="btn btn-outline-primary engagement-btn" 
+                            data-level="frequently"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            title="Contacting companies monthly">High</button>
+                </div>
+            </div>
+            
+            <!-- Calculate Button -->
+            <button id="calculate-btn" class="submit-btn">Calculate Savings</button>
         </div>
         
-        <!-- Engagement Level -->
-        <div class="mb-4">
-            <h5>How often are you connecting with your clients?</h5>
-            <button class="btn btn-outline-primary engagement-btn selected" 
-                    data-level="rarely"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="right"
-                    title="Contacting companies once per year">Low</button>
-            <button class="btn btn-outline-primary engagement-btn" 
-                    data-level="often"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="right"
-                    title="Contacting companies quarterly">Medium</button>
-            <button class="btn btn-outline-primary engagement-btn" 
-                    data-level="frequently"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="right"
-                    title="Contacting companies monthly">High</button>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <h1>Potential Bank Savings with Proven</h1>
-        
-        <!-- Predictions -->
-        <div id="predictions" class="hidden">
+        <!-- Results Section -->
+        <div id="predictions" class="results-section hidden">
             <div class="row">
                 <!-- Startup Predictions -->
                 <div class="col-md-4">

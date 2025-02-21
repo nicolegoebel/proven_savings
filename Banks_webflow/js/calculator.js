@@ -90,7 +90,6 @@ function initializeSliders() {
         slider.addEventListener('input', function() {
             const value = parseInt(this.value) || 0;
             display.textContent = `${value.toLocaleString()} clients`;
-            updatePredictions();
         });
         
         // Handle range selection
@@ -111,7 +110,6 @@ function initializeSliders() {
                 }
                 
                 display.textContent = `${config.min.toLocaleString()} clients`;
-                updatePredictions();
             });
         });
         
@@ -121,7 +119,6 @@ function initializeSliders() {
         slider.value = ranges.small.min;
         slider.step = 1;
         display.textContent = `${ranges.small.min.toLocaleString()} clients`;
-        updatePredictions();
     });
 }
 
@@ -131,13 +128,17 @@ function initializeEngagementButtons() {
         button.addEventListener('click', function() {
             document.querySelectorAll('.engagement-btn').forEach(btn => btn.classList.remove('selected'));
             this.classList.add('selected');
-            updatePredictions();
         });
     });
 }
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize calculate button
+    document.getElementById('calculate-btn').addEventListener('click', function() {
+        updatePredictions();
+    });
+
     initializeSliders();
     initializeEngagementButtons();
     

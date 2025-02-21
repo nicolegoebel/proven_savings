@@ -1,44 +1,77 @@
-.sidebar {
-    background-color: #f8f9fa;
-    padding: 20px;
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 300px;
-    overflow-y: auto;
-}
-
 body {
     min-height: 100vh;
     margin: 0;
-    padding: 0;
+    padding: 20px;
+    background-color: #f8f9fa;
 }
 
-.main-content {
-    margin-left: 320px;
-    padding: 20px;
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.input-section {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .range-label {
     display: block;
-    margin: 10px 0;
+    margin: 20px 0 10px;
+    color: #666;
 }
 
 .prediction-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .hidden {
     display: none;
 }
 
-.engagement-btn {
+.btn-group {
     width: 100%;
-    margin: 5px 0;
+}
+
+.btn-group .btn {
+    flex: 1;
+    text-align: center;
+}
+
+.engagement-btn {
+    margin: 5px 10px 5px 0;
 }
 
 .selected {
     background-color: #0d6efd;
     color: white;
+}
+
+.submit-btn {
+    display: block;
+    width: 200px;
+    margin: 30px auto 0;
+    padding: 12px;
+    font-size: 1.1em;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submit-btn:hover {
+    background-color: #0b5ed7;
+}
+
+.results-section {
+    margin-top: 40px;
 }
