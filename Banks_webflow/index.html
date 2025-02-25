@@ -15,39 +15,33 @@
             <!-- Startup Clients -->
             <div class="mb-4">
                 <h5>How many startup clients do you have?</h5>
-                <div class="btn-group w-100" role="group">
-                    <input type="radio" class="btn-check" name="startup-range" id="startup-small" checked>
-                    <label class="btn btn-outline-primary" for="startup-small">0-100</label>
-                    
-                    <input type="radio" class="btn-check" name="startup-range" id="startup-medium">
-                    <label class="btn btn-outline-primary" for="startup-medium">100-10K</label>
-                    
-                    <input type="radio" class="btn-check" name="startup-range" id="startup-large">
-                    <label class="btn btn-outline-primary" for="startup-large">10K-2M</label>
+                <div class="slider-container">
+                    <label class="range-label">Number of Startup Clients</label>
+                    <input type="range" class="form-range" id="startup-slider" min="0" max="100" value="0">
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>0</span>
+                        <span>2M</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <strong class="fs-5" id="startup-value">0 clients</strong>
+                    </div>
                 </div>
-                
-                <label class="range-label">Number of Startup Clients</label>
-                <input type="range" class="form-range" id="startup-slider" min="0" max="100" value="0">
-                <small class="text-muted" id="startup-value">0 clients</small>
             </div>
             
             <!-- SME Clients -->
             <div class="mb-4">
                 <h5>How many SME clients do you have?</h5>
-                <div class="btn-group w-100" role="group">
-                    <input type="radio" class="btn-check" name="sme-range" id="sme-small" checked>
-                    <label class="btn btn-outline-primary" for="sme-small">0-100</label>
-                    
-                    <input type="radio" class="btn-check" name="sme-range" id="sme-medium">
-                    <label class="btn btn-outline-primary" for="sme-medium">100-10K</label>
-                    
-                    <input type="radio" class="btn-check" name="sme-range" id="sme-large">
-                    <label class="btn btn-outline-primary" for="sme-large">10K-2M</label>
+                <div class="slider-container">
+                    <label class="range-label">Number of SME Clients</label>
+                    <input type="range" class="form-range" id="sme-slider" min="0" max="100" value="0">
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>0</span>
+                        <span>2M</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <strong class="fs-5" id="sme-value">0 clients</strong>
+                    </div>
                 </div>
-                
-                <label class="range-label">Number of SME Clients</label>
-                <input type="range" class="form-range" id="sme-slider" min="0" max="100" value="0">
-                <small class="text-muted" id="sme-value">0 clients</small>
             </div>
             
             <!-- Engagement Level -->

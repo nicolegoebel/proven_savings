@@ -1,9 +1,16 @@
-// Range configurations
-const ranges = {
-    small: { min: 0, max: 100 },
-    medium: { min: 100, max: 10000 },
-    large: { min: 10000, max: 2000000 }
-};
+// Slider value to client count conversion
+function sliderToClients(value) {
+    if (value === 0) return 0;
+    // Convert slider value (0-100) to exponential scale (1-2M)
+    return Math.round(Math.exp(Math.log(1) + (Math.log(2000000) - Math.log(1)) * (value / 100)));
+}
+
+// Client count to slider value conversion
+function clientsToSlider(clients) {
+    if (clients === 0) return 0;
+    // Convert client count (1-2M) to slider value (0-100)
+    return Math.round((Math.log(clients) - Math.log(1)) / (Math.log(2000000) - Math.log(1)) * 100);
+}
 
 // Format currency
 function formatCurrency(amount) {
@@ -46,8 +53,11 @@ function calculateSavings(clients, type) {
 
 // Update predictions
 function updatePredictions() {
-    const startupClients = parseInt(document.getElementById('startup-slider').value) || 0;
-    const smeClients = parseInt(document.getElementById('sme-slider').value) || 0;
+    const startupSliderValue = parseInt(document.getElementById('startup-slider').value) || 0;
+    const smeSliderValue = parseInt(document.getElementById('sme-slider').value) || 0;
+    
+    const startupClients = sliderToClients(startupSliderValue);
+    const smeClients = sliderToClients(smeSliderValue);
     
     // Get current engagement level
     const engagementLevel = document.querySelector('.engagement-btn.selected')?.dataset.level || 'rarely';
@@ -86,39 +96,21 @@ function initializeSliders() {
         const slider = document.getElementById(`${type}-slider`);
         const display = document.getElementById(`${type}-value`);
         
+        // Configure slider
+        slider.min = 0;
+        slider.max = 100;
+        slider.value = 0;
+        slider.step = 1;
+        
         // Update display when slider moves
         slider.addEventListener('input', function() {
             const value = parseInt(this.value) || 0;
-            display.textContent = `${value.toLocaleString()} clients`;
+            const clients = sliderToClients(value);
+            display.textContent = `${clients.toLocaleString()} clients`;
         });
         
-        // Handle range selection
-        document.querySelectorAll(`input[name="${type}-range"]`).forEach(radio => {
-            radio.addEventListener('change', function() {
-                const range = this.id.split('-')[1];
-                const config = ranges[range];
-                
-                slider.min = config.min;
-                slider.max = config.max;
-                slider.value = config.min; // Start with minimum value for this range
-                
-                // Adjust step size based on range
-                if (range === 'large') {
-                    slider.step = 100; // For 10K-2M range, use steps of 100
-                } else {
-                    slider.step = Math.max(1, Math.floor((config.max - config.min) / 100));
-                }
-                
-                display.textContent = `${config.min.toLocaleString()} clients`;
-            });
-        });
-        
-        // Initialize with small range
-        slider.min = ranges.small.min;
-        slider.max = ranges.small.max;
-        slider.value = ranges.small.min;
-        slider.step = 1;
-        display.textContent = `${ranges.small.min.toLocaleString()} clients`;
+        // Initialize display
+        display.textContent = '0 clients';
     });
 }
 
