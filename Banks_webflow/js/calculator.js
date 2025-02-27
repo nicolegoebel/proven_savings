@@ -73,7 +73,7 @@ function updatePredictions() {
     document.getElementById('startup-active').textContent = startupSavings.engagedClients.toLocaleString();
     document.getElementById('startup-per-client').textContent = formatCurrency(startupSavings.savingsPerActiveClient);
     document.getElementById('startup-engagement-text').textContent = 
-        `With ${engagementText} engagement, our database estimates that approximately `;
+        `With ${engagementText} engagement, the Proven database estimates that approximately `;
     
     // Calculate SME savings
     const smeSavings = calculateSavings(smeClients, 'sme');
@@ -81,7 +81,7 @@ function updatePredictions() {
     document.getElementById('sme-active').textContent = smeSavings.engagedClients.toLocaleString();
     document.getElementById('sme-per-client').textContent = formatCurrency(smeSavings.savingsPerActiveClient);
     document.getElementById('sme-engagement-text').textContent = 
-        `With ${engagementText} engagement, our database estimates that approximately `;
+        `With ${engagementText} engagement, the Proven database estimates that approximately `;
     
     // Calculate and display combined savings
     const totalSavings = startupSavings.totalSavings + smeSavings.totalSavings;
