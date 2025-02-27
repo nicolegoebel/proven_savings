@@ -5,6 +5,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto;
+        }
+        .container {
+            padding: 20px;
+        }
         .slider-container {
             margin: 20px 0;
         }
@@ -15,6 +24,9 @@
             height: 400px !important;
             aspect-ratio: 16/9;
             width: 100%;
+        }
+        .card {
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -154,6 +166,69 @@
         <div class="row mt-4">
             <h3>Model Insights</h3>
             
+            <!-- Engagement Level Explanation -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>How We Calculate Savings</h4>
+                        <p>Annual savings per company are calculated based on engagement levels:</p>
+                        <ul>
+                            <li><strong>Low/Rarely:</strong> Baseline engagement (1% of clients)</li>
+                            <li><strong>Medium/Often:</strong> Enhanced engagement (baseline + 3% of clients)</li>
+                            <li><strong>High/Frequently:</strong> Maximum engagement (baseline + 5% of clients)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Startup Insights -->
+            <div class="col-12 mb-4" id="startupInsights">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>Startup Savings</h4>
+                        <p>For Banks with <span id="startupClientCount"></span> clients, at a <span id="startupEngagementLevel"></span> engagement level:</p>
+                        <ul>
+                            <li>Annual savings: <span id="startupAnnualSavings"></span></li>
+                            <li>Annual savings per company: <span id="startupAnnualSavingsPerCompany"></span></li>
+                        </ul>
+                        <h5>Examples of typical savings categories include:</h5>
+                        <ol>
+                            <li>Cloud Hosting & Infrastructure – AWS, Google Cloud, Azure, DigitalOcean</li>
+                            <li>Productivity & Collaboration – Slack, Notion, Asana, Google Workspace</li>
+                            <li>Software Development & DevOps – GitHub, GitLab, Jira, Docker, Datadog</li>
+                            <li>Customer Support & Engagement – Zendesk, Intercom, Drift, HubSpot</li>
+                            <li>Sales & Marketing Automation – Salesforce, HubSpot, Mailchimp, Marketo</li>
+                            <li>Finance & Payments – Stripe, QuickBooks, Expensify, Brex</li>
+                            <li>Analytics & Data Tools – Google Analytics, Mixpanel, Segment, Looker</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SME Insights -->
+            <div class="col-12 mb-4" id="smeInsights">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>SME Savings</h4>
+                        <p>For Banks with <span id="smeClientCount"></span> clients, at a <span id="smeEngagementLevel"></span> engagement level:</p>
+                        <ul>
+                            <li>Annual savings: <span id="smeAnnualSavings"></span></li>
+                            <li>Annual savings per company: <span id="smeAnnualSavingsPerCompany"></span></li>
+                        </ul>
+                        <h5>Examples of typical savings categories include:</h5>
+                        <ol>
+                            <li>Point-of-Sale (POS) & Payment Processing – Square, Clover, Shopify POS, Stripe Terminal</li>
+                            <li>Inventory Management & Supply Chain – Lightspeed, TradeGecko, Unleashed</li>
+                            <li>Customer Relationship Management (CRM) – HubSpot, Zoho CRM, Pipedrive</li>
+                            <li>Accounting & Payroll – QuickBooks, Xero, ADP, Gusto</li>
+                            <li>Marketing & Social Media – Facebook Business Suite, Google Ads, Mailchimp, Hootsuite</li>
+                            <li>E-commerce & Online Presence – Shopify, Wix, WooCommerce, WordPress</li>
+                            <li>Security & Compliance – CCTV, alarm systems, cybersecurity tools like Norton, compliance software</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
             <!-- Historical Data -->
             <div class="col-12 mb-4">
                 <div class="card">
@@ -224,19 +299,27 @@
         let engagementComparisonChart = null;
         
         function calculateSavings(clients, type, engagement) {
-            const baseAmount = 178.58; // Base amount per client per year at SVB's engagement level
-            const engagementMultipliers = {
-                rarely: 1.0,     // SVB baseline engagement level
-                often: 1.03,    // JPM engagement level (+3%)
-                frequently: 1.05  // Projected high engagement level (+5%)
+            const baseAmount = 178.58; // Base amount per client per year
+            const engagementPercentages = {
+                rarely: 0.01,    // Baseline: 1% of clients
+                often: 0.04,     // Medium: Baseline + 3%
+                frequently: 0.06  // High: Baseline + 5%
             };
             
             let typeMultiplier = 1;
             if (type === 'sme') typeMultiplier = 0.7;
             else if (type === 'both') typeMultiplier = 0.85;
             
-            const result = clients * baseAmount * engagementMultipliers[engagement] * typeMultiplier;
-            return isNaN(result) ? 0 : result;
+            // Calculate engaged clients based on engagement level
+            const engagedClients = Math.round(clients * engagementPercentages[engagement]);
+            
+            // Calculate total savings
+            const result = engagedClients * baseAmount * typeMultiplier;
+            return {
+                totalSavings: isNaN(result) ? 0 : result,
+                engagedClients: engagedClients,
+                savingsPerCompany: isNaN(result) ? 0 : (result / engagedClients)
+            };
         }
 
         function formatGrowthRate(base, doubled) {

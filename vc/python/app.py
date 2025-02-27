@@ -408,7 +408,7 @@ def display_metrics_table(selected_levels, details, total_admin_savings):
     
     # Row labels and values
     metrics = [
-        ("Potential Portfolio Savings", "savings", True, "Using our database, we model potential savings on the relationship between total offers redeemed and the number of portfolio companies within a specific investment level, over the period of one year."),
+        ("Potential Portfolio Savings", "savings", True, "Using the Proven database, we model potential savings on the relationship between total offers redeemed and the number of portfolio companies within a specific investment level, over the period of one year."),
         ("VC Admin Cost Savings", "admin_savings", True, "Admin time is estimated by counting the hours spent managing current vendors (~5 hours/month), responding to portfolio company requests (bimonthly inquiries for half of portfolio companies, ~20 minutes each), tailoring specific vendor-portfolio company introductions (half of portfolio companies require specific introduction each month, ~15 minutes each), performing administrative tasks such as updating and maintaining vendor directory database (2 updates weekly, ~1 hour each), and reaching out to vendors to ensure availability of fresh, new deals offered (10 inquires per week, ~10 minutes each). We assume an annual average salary of $150K and 50% of the employees time applied to the above tasks."),
         ("Total Potential Savings", "total_combined_savings", True, None),
         ("Average Potential Savings/Portfolio Company", "savings_per_company", True, None)
@@ -528,7 +528,7 @@ num_companies = st.slider('', min_value=10, max_value=1600, value=100)
 
 st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
 
-st.subheader("2. Select Investment Levels", help="The total number of portfolio companies selected above are distributed among the three levels of investment based on the average distributions in our database: Pre-seed: 8-9%, Seed: 90-94%, Series A+: 2-6%")
+st.subheader("2. Select Investment Levels", help="The total number of portfolio companies selected above are distributed among the three levels of investment based on the average distributions in the Proven database: Pre-seed: 8-9%, Seed: 90-94%, Series A+: 2-6%")
 
 cols = st.columns(3)
 investment_levels = []
